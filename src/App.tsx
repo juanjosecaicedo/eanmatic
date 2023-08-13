@@ -26,7 +26,7 @@ function App() {
             <Route path="/customer-account-login" Component={CustomerAccountLogin} />
             <Route path="/customer-account-create" Component={CustomerAccountCreate} />
             <Route path="/customer-account" Component={CustomerAccount} />
-            <Route path="/product/id/:id/sku/:sku" Component={ProductView} />
+            <Route path="/product/id/:id/sku/:sku/url/:url" Component={ProductView} />
           </Routes>
         </div>
       </ThemeProvider>

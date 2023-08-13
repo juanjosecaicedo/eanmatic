@@ -1,13 +1,15 @@
 export interface Product {
   name: string
   sku: string
-  id: number
+  id: number|string
   image: Image
   price_range: PriceRange
   __typename: string
   weight: number
+  url_key: string
   variants: Variant[]
-  configurable_options: ConfigurableOption[]
+  configurable_options: ConfigurableOption[],
+  media_gallery: Image[]
 }
 export interface Image {
   url: string

@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { Value, ConfigurableOption, Variant, Product } from '@/interfaces/Product';
+import { Value, ConfigurableOption, Variant } from '@/interfaces/Product';
 import { Button } from '@/components/ui/button';
 
 interface ProductVariationsProps {
-  configurableOptions?: ConfigurableOption[],
-  variants: Variant[]
+  readonly configurableOptions: ConfigurableOption[],
+  readonly variants: Variant[]
+  showLabels?: boolean
 }
 
-const ProductVariations = ({ configurableOptions, variants }: ProductVariationsProps) => {
+const ProductVariations = ({ configurableOptions, variants, showLabels }: ProductVariationsProps) => {
 
   const [selectedValueColor, setSelectedValueColor] = useState<Value | null | undefined>(null)
   const [selectedValueSize, setSelectedValueSize] = useState<Value | null | undefined>(null)
-  const [product, setProduct] = useState<Product | null>(null)
 
   const handleColor = (value: Value) => {
     if (value.value_index === selectedValueColor?.value_index) {
@@ -72,30 +72,44 @@ const ProductVariations = ({ configurableOptions, variants }: ProductVariationsP
 
   }
 
+  const colors: ConfigurableOption | undefined = configurableOptions.find((option: ConfigurableOption) => option.attribute_code === 'color')
+  const sizes = configurableOptions.find((option: ConfigurableOption) => option.attribute_code === 'size')
+
   return (
     <>
-      <div>
-        {configurableOptions.find((option: ConfigurableOption) => option.attribute_code === 'color').values.map((value: Value) => (
-          <Button
-            key={value.value_index}
-            variant={selectedValueColor?.value_index !== value.value_index ? "outline" : "secondary"}
-            size="sm" onClick={() => handleColor(value)}
-            type='button'
-          >
-            {value.label}
-          </Button>
-        ))}
+      <div className='flex items-center gap-2'>
+        {(showLabels) && (
+          <span className='font-bold'>Size:</span>
+        )}
+        <div className='flex flex-wrap gap-1 my-1'>
+          {colors?.values.map((value: Value) => (
+            <Button
+              key={value.value_index}
+              variant={selectedValueColor?.value_index !== value.value_index ? "outline" : "secondary"}
+              size="sm" onClick={() => handleColor(value)}
+              type='button'
+            >
+              {value.label}
+            </Button>
+          ))}
+        </div>
       </div>
-      <div>
-        {configurableOptions.find((option: ConfigurableOption) => option.attribute_code === 'size').values.map((value: Value) => (
-          <Button
-            key={value.value_index}
-            variant={selectedValueSize?.value_index !== value.value_index ? "outline" : "secondary"}
-            size="sm" onClick={() => handleSize(value)}
-            type='button'>
-            {value.label}
-          </Button>
-        ))}
+      <div className='flex items-center gap-2'>
+        {(showLabels) && (
+          <span className='font-bold'>Color:</span>
+        )}
+
+        <div className='flex flex-wrap gap-1 my-1'>
+          {sizes?.values.map((value: Value) => (
+            <Button
+              key={value.value_index}
+              variant={selectedValueSize?.value_index !== value.value_index ? "outline" : "secondary"}
+              size="sm" onClick={() => handleSize(value)}
+              type='button'>
+              {value.label}
+            </Button>
+          ))}
+        </div>
       </div>
     </>
   );

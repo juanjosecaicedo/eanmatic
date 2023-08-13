@@ -70,20 +70,6 @@ const GET_PRODUCTS = gql`
         }
         url_key        
         price_range {
-          minimum_price {
-            regular_price {
-              value
-              currency
-            }
-            final_price {
-              value
-              currency
-            }
-            discount {
-              amount_off
-              percent_off
-            }
-          }
           maximum_price {
             regular_price {
               value
@@ -108,7 +94,7 @@ export default function Home() {
 
   const { data, loading, error } = useQuery(GET_PRODUCTS);
 
-    if(loading) {
+  if (loading) {
     return (
       <div className="mt-10 flex justify-center">
         <Loader2 className="mr-2 h-10 w-10 animate-spin" />
@@ -155,14 +141,15 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  <Link to={'/product/id/' + product.id + '/sku/' + product.sku} className={buttonVariants({ variant: "link" }) + ' px-0'}> {product.name} </Link>
+                  <Link to={'/product/id/' + product.id + '/sku/' + product.sku + '/url/' + product.url_key} className={buttonVariants({ variant: "link" }) + ' px-0'}> {product.name} </Link>
                 </CardDescription>
                 <span className="text-sm">SKU: <strong>{product.sku}</strong></span>
                 <div className="flex">
-                  <span>{getCurrencySymbol('en-US', product.price_range.maximum_price.final_price.currency)} {product.price_range.maximum_price.final_price.value} </span>
+                  <span>{getCurrencySymbol('en-US', product.price_range.maximum_price.final_price.currency)}{product.price_range.maximum_price.final_price.value} </span>
                 </div>
-
-                <ProductVariations configurableOptions={product.configurable_options} variants={product.variants} />
+                {product.__typename === "ConfigurableProduct" && (
+                  <ProductVariations configurableOptions={product.configurable_options} variants={product.variants} />
+                )}
                 <AddTocart parentSku={product.sku} />
               </CardContent>
             </Card>
