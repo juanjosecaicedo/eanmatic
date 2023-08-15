@@ -1,17 +1,26 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Value, ConfigurableOption, Variant } from '@/interfaces/Product';
 import { Button } from '@/components/ui/button';
+import {
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 
 interface ProductVariationsProps {
   readonly configurableOptions: ConfigurableOption[],
   readonly variants: Variant[]
   showLabels?: boolean
+  field?: object
 }
 
-const ProductVariations = ({ configurableOptions, variants, showLabels }: ProductVariationsProps) => {
+const ProductVariations = ({ configurableOptions, variants, showLabels, field }: ProductVariationsProps) => {
 
   const [selectedValueColor, setSelectedValueColor] = useState<Value | null | undefined>(null)
   const [selectedValueSize, setSelectedValueSize] = useState<Value | null | undefined>(null)
+  const [sku, setSku] = useState<string>('');
+  const inputElement = useRef<HTMLInputElement | null>(null);
+
 
   const handleColor = (value: Value) => {
     if (value.value_index === selectedValueColor?.value_index) {
@@ -66,14 +75,23 @@ const ProductVariations = ({ configurableOptions, variants, showLabels }: Produc
     }
 
     if (matchingSkus.length) {
-      const data = variants.find((variant: Variant) => variant.product.sku === matchingSkus[0])
-      console.log(matchingSkus, data);
+      // const data = variants.find((variant: Variant) => variant.product.sku === matchingSkus[0])
+      // console.log(data);
+
+      //setSku(matchingSkus[0]);
+
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+      if (inputElement.current) {
+        nativeInputValueSetter?.call(inputElement.current, matchingSkus[0]);
+        const event = new Event('change', { bubbles: true });
+        inputElement.current?.dispatchEvent(event);
+        setSku(matchingSkus[0]);
+      }
     }
-
   }
-
-  const colors: ConfigurableOption | undefined = configurableOptions.find((option: ConfigurableOption) => option.attribute_code === 'color')
-  const sizes = configurableOptions.find((option: ConfigurableOption) => option.attribute_code === 'size')
+  
+  const colors: ConfigurableOption | undefined = configurableOptions?.find((option: ConfigurableOption) => option.attribute_code === 'color')
+  const sizes = configurableOptions?.find((option: ConfigurableOption) => option.attribute_code === 'size')
 
   return (
     <>
@@ -94,7 +112,7 @@ const ProductVariations = ({ configurableOptions, variants, showLabels }: Produc
           ))}
         </div>
       </div>
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-2 mt-0'>
         {(showLabels) && (
           <span className='font-bold'>Color:</span>
         )}
@@ -111,6 +129,14 @@ const ProductVariations = ({ configurableOptions, variants, showLabels }: Produc
           ))}
         </div>
       </div>
+      {field && (
+        <div>
+          <FormControl>
+            <Input {...field} value={sku} className='hidden' ref={inputElement} />
+          </FormControl>
+          <FormMessage />
+        </div>
+      )}
     </>
   );
 }

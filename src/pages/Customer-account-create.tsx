@@ -20,10 +20,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useForm } from "react-hook-form"
-import { useMutation, gql } from "@apollo/client"
+import { useMutation } from "@apollo/client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { useState } from "react"
+import { CREATE_CUSTOMER, GENERATE_CUSTOMER_TOKEN } from "@/graphql/customer"
+import { crearCookie, namespaces } from "@/lib/utils"
 
 const messagePasswordError = 'Minimum of different classes of characters in password is %1. Classes of characters: Lower Case, Upper Case, Digits, Special Characters.';
 const minPassword = 8;
@@ -44,27 +46,6 @@ const formSchema = z.object({
   message: "Passwords don't match",
   path: ["confirmPassword"]
 });
-
-
-const CREATE_CUSTOMER = gql`
-  mutation CreateCustomer($input: CustomerInput!) {
-    createCustomer(input: $input) {
-      customer {
-        firstname
-        lastname
-        email
-        is_subscribed
-      }
-    }
-  }
-`
-const GENERATE_CUSTOMER_TOKEN = gql`
-  mutation GenerateCustomerToken($email: String!, $password: String!) {
-    generateCustomerToken(email: $email, password: $password) {
-      token
-    }
-  }
-`;
 
 export default function CustomerAccountCreate() {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -108,6 +89,8 @@ export default function CustomerAccountCreate() {
             }
           })
           console.log(data)
+          crearCookie(namespaces.customer.token, data.token, 1)
+          window.localStorage.setItem(namespaces.customer.token, data.token)
         } catch (error) {
           if (error instanceof Error) {
             setError(error.message)

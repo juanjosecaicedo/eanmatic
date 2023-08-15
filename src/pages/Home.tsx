@@ -1,4 +1,4 @@
-import { useQuery, gql } from "@apollo/client"
+import { useQuery } from "@apollo/client"
 import {
   Card,
   CardContent,
@@ -10,88 +10,9 @@ import { Product } from "@/interfaces/Product"
 import { Link } from "react-router-dom"
 import ProductVariations from "@/components/product-variations"
 import { Loader2 } from "lucide-react"
-import AddTocart from "@/components/add-to-cart"
-
-const GET_PRODUCTS = gql`
-  query GetProducts {
-    products(
-    filter: {},
-    sort: {name: ASC},
-    pageSize: 5,
-    currentPage: 1
-    ) {
-      total_count
-      items {
-        name
-        sku
-        id
-        image {
-          url
-          label
-        }
-        __typename
-        ... on ConfigurableProduct {
-            configurable_options {
-            id
-            attribute_id
-            label
-            position
-            use_default
-            attribute_code
-            values {
-              value_index
-              label
-            }
-            product_id
-          }
-          variants {
-            product {
-              id          
-              sku
-              attribute_set_id
-              ... on PhysicalProductInterface {
-                weight
-              }
-              price_range{
-                minimum_price{
-                  regular_price{
-                    value
-                    currency
-                  }
-                }
-              }
-            }
-            attributes {
-              label
-              code
-              value_index
-            }
-          }        
-        }
-        url_key        
-        price_range {
-          maximum_price {
-            regular_price {
-              value
-              currency
-            }
-            final_price {
-              value
-              currency
-            }
-            discount {
-              amount_off
-              percent_off
-            }
-          }
-        }
-      }
-    }
-  }
-`
+import { GET_PRODUCTS } from "@/graphql/product"
 
 export default function Home() {
-
   const { data, loading, error } = useQuery(GET_PRODUCTS);
 
   if (loading) {
@@ -109,8 +30,6 @@ export default function Home() {
       </div>
     );
   }
-
-  console.log(data)
 
   const getCurrencySymbol = (locale: string, currency: string) => {
     return (0).toLocaleString(
@@ -147,10 +66,7 @@ export default function Home() {
                 <div className="flex">
                   <span>{getCurrencySymbol('en-US', product.price_range.maximum_price.final_price.currency)}{product.price_range.maximum_price.final_price.value} </span>
                 </div>
-                {product.__typename === "ConfigurableProduct" && (
-                  <ProductVariations configurableOptions={product.configurable_options} variants={product.variants} />
-                )}
-                <AddTocart parentSku={product.sku} />
+                <ProductVariations variants={product.variants} configurableOptions={product.configurable_options} />
               </CardContent>
             </Card>
           ))}
