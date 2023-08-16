@@ -17,14 +17,14 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { GET_PRODUCT_DETAILS } from "@/graphql/product";
-import { ADD_CONFIGURABLE_PRODUCTS_TO_CART, CREATE_EMPTY_CART_GUEST } from "@/graphql/checkout";
+import { ADD_CONFIGURABLE_PRODUCTS_TO_CART, ADD_SIMPLE_PRODUCTS_TO_CART, CREATE_EMPTY_CART_GUEST } from "@/graphql/checkout";
 import { AlertCircle, Check } from "lucide-react"
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert"
-import { crearCookie, getCookie, namespaces } from "@/lib/utils";
+import { crearCookie, getCookie, getCurrencySymbol, namespaces } from "@/lib/utils";
 import { useState } from "react";
 
 const formSchema = z.object({
@@ -102,7 +102,6 @@ export default function ProductView() {
   const [addConfigurableProductsToCart, { loading: loadingToCartConfigurable, error: errorToCartConfigurable }] = useMutation(ADD_CONFIGURABLE_PRODUCTS_TO_CART)
   const [showAlert, setShowAler] = useState(false)
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
     if (!getCookie(namespaces.checkout.cartId)) {
       const cart = await getEmptyCart();
       crearCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
@@ -125,10 +124,37 @@ export default function ProductView() {
           }
         }
       })
-      console.log(addToCart);
+
       if (addToCart.addConfigurableProductsToCart.cart) {
         setShowAler(true);
       }
+    }
+  }
+
+  const [addSimpleProductsToCart, { loading: loadingCartSimple, error: errorToCartSimple }] = useMutation(ADD_SIMPLE_PRODUCTS_TO_CART)
+  async function handleSimpleToCart() {
+    if (!getCookie(namespaces.checkout.cartId)) {
+      const cart = await getEmptyCart();
+      crearCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
+      window.localStorage.setItem(namespaces.checkout.cartId, cart.data.createEmptyCart)
+    }
+
+    const cartId = getCookie(namespaces.checkout.cartId);
+    const { data: addToCart } = await addSimpleProductsToCart({
+      variables: {
+        input: {
+          cart_id: cartId,
+          cart_items: [{
+            data: {
+              quantity: 1,
+              sku: sku
+            }
+          }]
+        }
+      }
+    })
+    if (addToCart.addSimpleProductsToCart) {
+      setShowAler(true);
     }
   }
 
@@ -145,18 +171,14 @@ export default function ProductView() {
     )
   }
 
+
   const product: Product = data.products.items.find((item: Product) => item.id == id);
-  const getCurrencySymbol = (locale: string, currency: string) => {
-    return (0).toLocaleString(
-      locale,
-      {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }
-    ).replace(/\d/g, '').trim()
+  const storedValue = localStorage.getItem(namespaces.store.storeConfig);
+  let storeConfig;
+  if (storedValue) {
+    storeConfig = JSON.parse(storedValue);
   }
+
 
   return (
     <>
@@ -170,28 +192,29 @@ export default function ProductView() {
             {product.name}
           </h3>
           <h4 className="scroll-m-20 text-xl font-semibold tracking-tight">
-            <span>{getCurrencySymbol('en-US', product.price_range.maximum_price.final_price.currency)} {product.price_range.maximum_price.final_price.value} </span>
+            <span>{getCurrencySymbol(storeConfig.locale.replace('_', '-'), product.price_range.maximum_price.final_price.currency)} {product.price_range.maximum_price.final_price.value} </span>
           </h4>
 
           {errorCart && (<AlertDestructive variant={Variant.destructive} message={errorCart.message} />)}
           {errorToCartConfigurable && (<AlertDestructive variant={Variant.destructive} message={errorToCartConfigurable.message} />)}
+          {errorToCartSimple && (<AlertDestructive variant={Variant.destructive} message={errorToCartSimple.message} />)}
           {showAlert && (<AlertDestructive variant={Variant.success} message="Product added successfully" />)}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
-              <FormField
-                control={form.control}
-                name="parentSku"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input type="hidden" placeholder="sku" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {product.__typename === "ConfigurableProduct" && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
+                <FormField
+                  control={form.control}
+                  name="parentSku"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input type="hidden" placeholder="sku" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {product.__typename === "ConfigurableProduct" && (
                 <FormField
                   control={form.control}
                   name="sku"
@@ -199,13 +222,21 @@ export default function ProductView() {
                     <ProductVariations showLabels={true} configurableOptions={product.configurable_options} variants={product.variants} field={field} />
                   )}
                 />
-              )}
-              <div>
-                <Button type="submit" className="mt-2">Add to cart</Button>
-              </div>
-            </form>
-          </Form>
-          {loadingCart || loadingToCartConfigurable && (
+
+                <div>
+                  <Button type="submit" className="mt-2">Add to cart</Button>
+                </div>
+              </form>
+            </Form>
+          )}
+
+          {product.__typename == "SimpleProduct" && (
+            <div>
+              <Button type="button" onClick={handleSimpleToCart} className="mt-2">Add to cart</Button>
+            </div>
+          )}
+
+          {loadingCart || loadingToCartConfigurable || loadingCartSimple && (
             <>
               <Loading />
             </>

@@ -33,7 +33,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { useQuery } from "@apollo/client"
-import { GET_ALL_STORES } from "@/graphql/store"
+import { GET_ALL_STORES, GET_STORE_CONFIG } from "@/graphql/store"
 import { Button } from "./ui/button"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -53,10 +53,7 @@ const FormSchema = z.object({
   })
 })
 
-
 export function HeaderNavigationMenu() {
-
-
   const { data, loading, error } = useQuery(GET_ALL_STORES, {
     context: {
       headers: {
@@ -64,13 +61,13 @@ export function HeaderNavigationMenu() {
       }
     }
   })
-  const [showAlert, setShowAlert] = useState<boolean>(false)
 
+  const [showAlert, setShowAlert] = useState<boolean>(false)
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   })
 
-  function onSubmit(values: z.infer<typeof FormSchema>) {    
+  function onSubmit(values: z.infer<typeof FormSchema>) {
     setShowAlert(true)
     crearCookie(namespaces.store.storeCode, values.storeCode, 5)
     localStorage.setItem(namespaces.store.storeCode, values.storeCode)
@@ -78,6 +75,20 @@ export function HeaderNavigationMenu() {
     setTimeout(() => window.location.reload(), 3000)
   }
 
+  const selected = getCookie(namespaces.store.storeCode)
+  const { data: dataSore, loading: loadingStore } = useQuery(GET_STORE_CONFIG, {
+    context: {
+      headers: {
+        'store': selected
+      }
+    }
+  })
+
+  let storeData
+  if (!loadingStore) {
+    storeData = dataSore
+    localStorage.setItem(namespaces.store.storeConfig, JSON.stringify(storeData?.storeConfig))
+  }
 
   return (
     <NavigationMenu className="w-full shadow-sm max-w-full py-5">
@@ -87,7 +98,7 @@ export function HeaderNavigationMenu() {
         </NavigationMenuItem>
         <NavigationMenuItem>
           <Dialog>
-            <DialogTrigger className="ml-5">Stores / change</DialogTrigger>
+            <DialogTrigger className="ml-5">Stores | {storeData?.storeConfig.store_name.replace('View', '')}</DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Select or change stores</DialogTitle>
@@ -119,7 +130,7 @@ export function HeaderNavigationMenu() {
                           name="storeCode"
                           render={({ field }) => (
                             <FormItem>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <Select value={(selected)? selected : "default"} onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select a store" />

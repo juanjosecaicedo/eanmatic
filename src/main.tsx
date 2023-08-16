@@ -5,7 +5,12 @@ import './globals.css'
 import { ApolloClient, InMemoryCache, ApolloProvider, HttpLink } from '@apollo/client';
 import { Provider } from 'react-redux'
 import { store } from '@/store.ts';
-import { getCookie, namespaces } from './lib/utils.ts';
+import { crearCookie, getCookie, namespaces } from './lib/utils.ts';
+
+
+if (!getCookie(namespaces.store.storeCode)) {
+  crearCookie(namespaces.store.storeCode, 'default', 1)
+}
 
 
 const client = new ApolloClient({

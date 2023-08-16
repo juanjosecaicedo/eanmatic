@@ -14,7 +14,8 @@ export const namespaces = {
     token: "CUSTOMER_TOKEN"
   },
   store: {
-    storeCode: "STORE_CODE"
+    storeCode: "STORE_CODE",
+    storeConfig: "STORE_CONFIG"
   }
 }
 
@@ -38,4 +39,16 @@ export function getCookie(name: string) {
   }
 
   return null; // Retorna null si no se encuentra la cookie
+}
+
+export function getCurrencySymbol(locale: string, currency: string) {
+  return (0).toLocaleString(
+    locale,
+    {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }
+  ).replace(/\d/g, '').trim()
 }
