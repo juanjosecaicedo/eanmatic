@@ -41,7 +41,16 @@ export function getCookie(name: string) {
   return null; // Retorna null si no se encuentra la cookie
 }
 
+export function getStoreConfig() {
+  const data = window.localStorage.getItem(namespaces.store.storeConfig)
+  if (data) {
+    return JSON.parse(data)
+  }
+  return data;
+}
+
 export function getCurrencySymbol(locale: string, currency: string) {
+
   return (0).toLocaleString(
     locale,
     {
@@ -51,4 +60,13 @@ export function getCurrencySymbol(locale: string, currency: string) {
       maximumFractionDigits: 0
     }
   ).replace(/\d/g, '').trim()
+}
+
+export function getStoreLocale(): string {
+  let locale = 'en-US'
+  const storeConfig = getStoreConfig();
+  if (storeConfig) {
+    locale = storeConfig.locale.replace('_', '-')
+  }
+  return locale
 }

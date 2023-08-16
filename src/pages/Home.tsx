@@ -11,6 +11,7 @@ import { Link } from "react-router-dom"
 import ProductVariations from "@/components/product-variations"
 import { Loader2 } from "lucide-react"
 import { GET_PRODUCTS } from "@/graphql/product"
+import { getCurrencySymbol, getStoreLocale } from "@/lib/utils"
 
 export default function Home() {
   const { data, loading, error } = useQuery(GET_PRODUCTS);
@@ -30,24 +31,12 @@ export default function Home() {
       </div>
     );
   }
-
-  const getCurrencySymbol = (locale: string, currency: string) => {
-    return (0).toLocaleString(
-      locale,
-      {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }
-    ).replace(/\d/g, '').trim()
-  }
-
+  const locale = getStoreLocale()
   const { items } = data.products;
   return (
     <>
       <div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {items.map((product: Product) => (
             <Card className="" key={product.id}>
               <CardHeader className="p-0">
@@ -64,7 +53,7 @@ export default function Home() {
                 </CardDescription>
                 <span className="text-sm">SKU: <strong>{product.sku}</strong></span>
                 <div className="flex">
-                  <span>{getCurrencySymbol('en-US', product.price_range.maximum_price.final_price.currency)}{product.price_range.maximum_price.final_price.value} </span>
+                  <span>{getCurrencySymbol(locale, product.price_range.maximum_price.final_price.currency)}{product.price_range.maximum_price.final_price.value} </span>
                 </div>
                 <ProductVariations variants={product.variants} configurableOptions={product.configurable_options} />
               </CardContent>

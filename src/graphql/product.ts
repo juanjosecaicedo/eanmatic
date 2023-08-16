@@ -5,7 +5,7 @@ export const GET_PRODUCTS = gql`
     products(
     filter: {},
     sort: {name: ASC},
-    pageSize: 5,
+    pageSize: 20,
     currentPage: 1
     ) {
       total_count

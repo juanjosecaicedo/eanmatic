@@ -1,10 +1,11 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import cardIdSlice from '@/reducers/cart-id';
-
+import cardSlice  from '@/reducers/cart'
 
 export const store = configureStore({
   reducer: {
-    cardId: cardIdSlice
+    cardId: cardIdSlice,
+    cart: cardSlice
   },
 });
 

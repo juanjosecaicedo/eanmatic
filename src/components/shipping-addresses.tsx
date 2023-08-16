@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { GET_ADYEN_PAYMEN_TMETHODS, SET_BILLING_ADDRESS_ON_CART, SET_GUEST_EMAIL_ON_CART, SET_PAYMENT_METHOD_ON_CART, SET_SHIPPING_ADDRESS_ON_CART, SET_SHIPPING_METHODS_ON_CART } from "@/graphql/checkout"
+import { CART, GET_ADYEN_PAYMEN_TMETHODS, SET_BILLING_ADDRESS_ON_CART, SET_GUEST_EMAIL_ON_CART, SET_PAYMENT_METHOD_ON_CART, SET_SHIPPING_ADDRESS_ON_CART, SET_SHIPPING_METHODS_ON_CART } from "@/graphql/checkout"
 import { AdyenPaymentMethods, AvailableShippingMethod, PaymentMethod, SetShippingAddressesOnCart } from "@/interfaces/Checkout"
 import { getCookie, namespaces } from "@/lib/utils"
 import { useLazyQuery, useMutation } from "@apollo/client"
@@ -17,7 +17,49 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Loader2 } from "lucide-react"
+import { useDispatch } from "react-redux"
+import { setCart } from "@/reducers/cart"
 
+//Exomple
+// Step 1: Require the parts of the module you want to use.
+/*import { Client, CheckoutAPI } from "@adyen/api-library"
+
+// Step 2: Initialize the client object.
+const client = new Client({
+  apiKey: 'AQEmhmfuXNWTK0Qc+iSGl2csqPayfLRhKqjJPi/QhiS/NCISKpxfdt4QwV1bDb7kfNy1WIxIIkxgBw==-OGvrtKthUEcKAN3IwnTKlLTGoxbaoeSuasQrKlpUMfw=-^jL?mV4tN*BTq~)E',
+  environment: 'TEST'
+})
+
+// Step 3: Initialize the API object.
+const checkoutApi = new CheckoutAPI(client);
+
+const paymentRequest = {
+  amount: {
+    currency: "USD",
+    value: 1000 // value in minor units
+  },
+  reference: "My first Adyen test payment with an API library/SDK",
+  paymentMethod: {
+    type: "scheme",
+    encryptedCardNumber: "test_4111111111111111",
+    encryptedExpiryMonth: "test_03",
+    encryptedExpiryYear: "test_2030",
+    encryptedSecurityCode: "test_737"
+  },
+  shopperReference: "YOUR_SHOPPER_REFERENCE",
+  storePaymentMethod: true,
+  shopperInteraction: "Ecommerce",
+  recurringProcessingModel: "CardOnFile",
+  returnUrl: "https://your-company.com/...",
+  merchantAccount: "YOUR_MERCHANT_ACCOUNT"
+};
+
+
+// Step 5: Make a /payments request.
+checkoutApi.payments(paymentRequest)
+.then(paymentResponse => console.log(paymentResponse.pspReference))
+.catch(error => console.log(error));
+*/
 const FormSchema = z.object({
   type: z.string({
     required_error: "You need to select a method.",
@@ -38,6 +80,10 @@ export default function ShippingAddresses() {
   const [setShippingMethodsOnCart, { loading: loadingMethodsOnCart }] = useMutation(SET_SHIPPING_METHODS_ON_CART)
   const [shipping, setShipping] = useState<null | SetShippingAddressesOnCart>(null);
   const [shippingMethodSelected, setShippingMethodSelected] = useState<AvailableShippingMethod | undefined | null>(null);
+  const [getCart] = useLazyQuery(CART)
+  const dispatch = useDispatch()
+  
+  
 
   const address = {
     firstname: "John",
@@ -53,6 +99,16 @@ export default function ShippingAddresses() {
     save_in_address_book: false,
   }
 
+  async function getCartData() {
+    const { data: dataCart } = await getCart({
+      variables: {
+        cartId: cartId
+      },
+      fetchPolicy: 'network-only'
+    })
+    dispatch(setCart(dataCart.cart))
+  }
+
   async function handleClick() {
     const { data: dataShipping } = await setShippingAddressesOnCart({
       variables: {
@@ -66,6 +122,7 @@ export default function ShippingAddresses() {
     })
 
     setShipping(dataShipping.setShippingAddressesOnCart)
+    getCartData()
   }
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -80,14 +137,14 @@ export default function ShippingAddresses() {
   const [adyenPaymentMethods, { loading: loadingAdyenPaymentMethods }] = useLazyQuery(GET_ADYEN_PAYMEN_TMETHODS)
   const [adyenPayments, setAdyenPayments] = useState<AdyenPaymentMethods | null>(null)
   async function onSubmit(values: z.infer<typeof FormSchema>) {
-    const methodSelect: AvailableShippingMethod | undefined = shipping?.cart.shipping_addresses[0].available_shipping_methods.find((method) => method.carrier_code == values.type)
+    const shippingMethodSelect: AvailableShippingMethod | undefined = shipping?.cart.shipping_addresses[0].available_shipping_methods.find((method) => method.carrier_code == values.type)
     const { data: cart } = await setShippingMethodsOnCart({
       variables: {
         input: {
           cart_id: cartId,
           shipping_methods: [{
-            carrier_code: methodSelect?.carrier_code,
-            method_code: methodSelect?.method_code
+            carrier_code: shippingMethodSelect?.carrier_code,
+            method_code: shippingMethodSelect?.method_code
           }]
         }
       }
@@ -108,12 +165,11 @@ export default function ShippingAddresses() {
         cartId: cartId
       }
     })
-    setAdyenPayments(payments.adyenPaymentMethods);
-    console.log(payments);
-
+    getCartData()
+    setAdyenPayments(payments.adyenPaymentMethods)
   }
 
-  const [setPaymentMethodOnCart, { loading: loadingSetPaymentMethodOnCart }] = useMutation(SET_PAYMENT_METHOD_ON_CART)
+  const [setPaymentMethodOnCart, { loading: loadingSetPaymentMethodOnCart, error: errorSetPaymentMethodOnCart }] = useMutation(SET_PAYMENT_METHOD_ON_CART)
   const [setBillingAddressOnCart, { loading: loadingSetBillingAddressOnCart }] = useMutation(SET_BILLING_ADDRESS_ON_CART)
   async function onSubmitPay(values: z.infer<typeof FormSchemaPay>) {
     await setBillingAddressOnCart({
@@ -126,7 +182,7 @@ export default function ShippingAddresses() {
         }
       }
     })
-    console.log(values);
+
     const { data: setPayment } = await setPaymentMethodOnCart({
       variables: {
         input: {
@@ -138,6 +194,7 @@ export default function ShippingAddresses() {
       }
     })
     console.log(setPayment);
+  
 
   }
 
@@ -240,6 +297,9 @@ export default function ShippingAddresses() {
                     </FormControl>
                   )} />
                 <Button type="submit" className="w-full">Continue</Button>
+                {errorSetPaymentMethodOnCart && (
+                  <p className="text-red-400">Error! {errorSetPaymentMethodOnCart.message}</p>
+                )}
               </form>
             </Form>
           )}

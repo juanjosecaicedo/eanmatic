@@ -222,3 +222,73 @@ export const SET_PAYMENT_METHOD_ON_CART = gql`
     }
   }
 `
+
+export const CART = gql`
+  query cart($cartId: String!){
+    cart(cart_id: $cartId) {
+      email
+      items {
+        id
+        prices {
+          total_item_discount {
+            value
+            currency
+          }
+          price {
+            value
+            currency
+          }
+          discounts {
+            label
+            amount {
+              value
+              currency
+            }
+          }
+        }
+        product {
+          name
+          sku
+          id
+          image {
+            url
+            label
+          }
+        }
+        quantity
+      }
+      applied_coupons {
+        code
+      }
+
+      selected_payment_method {
+        code
+        title
+      }
+
+      prices {
+        discounts {
+          amount {
+            value
+          }
+          label
+        }
+        subtotal_excluding_tax {
+          value
+          currency
+        }
+        grand_total {
+          value
+          currency
+        }
+        applied_taxes {
+          label
+          amount {
+            value
+            currency
+          }
+        }
+      }
+    }
+  }
+`
