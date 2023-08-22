@@ -2,7 +2,7 @@ import { Cart } from '@/interfaces/Cart'
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 interface Value {
-  value: Cart | null | object
+  value: Cart|null|object
 }
 
 const initialState: Value = {

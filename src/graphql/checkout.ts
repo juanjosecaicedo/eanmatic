@@ -254,6 +254,22 @@ export const CART = gql`
             url
             label
           }
+          price_range {
+            maximum_price {
+              regular_price {
+                value
+                currency
+              }
+              final_price {
+                value
+                currency
+              }
+              discount {
+                amount_off
+                percent_off
+              }
+            }
+          }
         }
         quantity
       }
@@ -288,6 +304,22 @@ export const CART = gql`
             currency
           }
         }
+      }
+    }
+  }
+`
+
+export const COUNTRIES = gql`
+  query {
+    countries {
+      id
+      two_letter_abbreviation
+      three_letter_abbreviation
+      full_name_locale
+      available_regions {
+        id
+        code
+        name
       }
     }
   }

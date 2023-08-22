@@ -1,3 +1,5 @@
+import { Product } from "./Product"
+
 export interface Root {
   cart: Cart
 }
@@ -37,12 +39,7 @@ export interface Price {
   __typename: string
 }
 
-export interface Product {
-  name: string
-  sku: string
-  image: Image
-  __typename: string
-}
+
 export interface Image {
   url: string
   label: string

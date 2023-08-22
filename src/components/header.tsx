@@ -98,7 +98,7 @@ export function HeaderNavigationMenu() {
         </NavigationMenuItem>
         <NavigationMenuItem>
           <Dialog>
-            <DialogTrigger className="ml-5">Stores | {storeData?.storeConfig.store_name.replace('View', '')}</DialogTrigger>
+            <DialogTrigger className="ml-5">{storeData?.storeConfig.store_name.replace('Store View', '')}</DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Select or change stores</DialogTitle>

@@ -43,10 +43,11 @@ export function getCookie(name: string) {
 
 export function getStoreConfig() {
   const data = window.localStorage.getItem(namespaces.store.storeConfig)
-  if (data) {
+  
+  if (data && data != "undefined")  {
     return JSON.parse(data)
   }
-  return data;
+  return false;
 }
 
 export function getCurrencySymbol(locale: string, currency: string) {

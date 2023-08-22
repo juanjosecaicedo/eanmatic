@@ -1,5 +1,5 @@
 
-import { Cart, Item } from "@/interfaces/Cart"
+import { Cart } from "@/interfaces/Cart"
 import { RootState } from "@/store"
 import { useSelector } from "react-redux"
 
@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getCurrencySymbol, getStoreLocale } from "@/lib/utils"
+import ItemsCart from "./items-cart"
 
 
 export default function Summary() {
@@ -33,7 +34,11 @@ export default function Summary() {
               <div className="space-y-1">
                 <p className="text-sm font-medium leading-none">Cart Subtotal	</p>
                 <p className="text-sm text-muted-foreground">
-                  {getCurrencySymbol(locale, cart.prices.subtotal_excluding_tax.currency)} {cart.prices.subtotal_excluding_tax.value}
+                  {'prices' in cart && (
+                    <>
+                      {getCurrencySymbol(locale, cart.prices.subtotal_excluding_tax.currency)} {cart.prices.subtotal_excluding_tax.value}
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -41,22 +46,21 @@ export default function Summary() {
               <div className="space-y-1">
                 <p className="text-sm font-medium leading-none">Order Total	</p>
                 <p className="text-sm text-muted-foreground">
-                  {getCurrencySymbol(locale, cart.prices.grand_total.currency)} {cart.prices.grand_total.value}
+                  {'prices' in cart && (
+                    <>
+                      {getCurrencySymbol(locale, cart.prices.grand_total.currency)} {cart.prices.grand_total.value}
+                    </>
+                  )}
                 </p>
               </div>
             </div>
             <div className="my-2 border border-gray-100">
-              <p className="mb-3 px-2">Items: {cart.items.length}</p>
-              {cart.items.map((item: Item) => (
-                <div className="flex gap-2" key={item.id}>
-                  <img src={item.product.image.url} alt="" width={50} />
-                  <div className="flex flex-col">
-                    <span className="font-bold">{item.product.name}</span>
-                    <span className="text-sm text-muted-foreground">SKU: <span className="font-bold">{item.product.sku}</span></span>
-                    <span>{item.prices.price.value}</span>
-                  </div>
-                </div>
-              ))}
+              {'items' in cart && (
+                <>
+                  <p className="mb-3 px-2">Items: {cart.items.length}</p>
+                  <ItemsCart locale={locale} items={cart.items} />
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

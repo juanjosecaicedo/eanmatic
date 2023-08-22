@@ -1,13 +1,13 @@
 import { Product } from "@/interfaces/Product";
-import { useQuery, useMutation } from "@apollo/client";
+import { useQuery, useMutation, useLazyQuery } from "@apollo/client";
 import { Loader2 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import ProductViewGellery from "./Product-view-gellery";
 import ProductVariations from "@/components/product-variations";
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useForm } from "react-hook-form"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -17,15 +17,17 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { GET_PRODUCT_DETAILS } from "@/graphql/product";
-import { ADD_CONFIGURABLE_PRODUCTS_TO_CART, ADD_SIMPLE_PRODUCTS_TO_CART, CREATE_EMPTY_CART_GUEST } from "@/graphql/checkout";
+import { ADD_CONFIGURABLE_PRODUCTS_TO_CART, ADD_SIMPLE_PRODUCTS_TO_CART, CART, CREATE_EMPTY_CART_GUEST } from "@/graphql/checkout";
 import { AlertCircle, Check } from "lucide-react"
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert"
-import { crearCookie, getCookie, getCurrencySymbol, namespaces } from "@/lib/utils";
+import { crearCookie, getCookie, getCurrencySymbol, getStoreConfig, namespaces } from "@/lib/utils";
 import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { setCart } from "@/reducers/cart";
 
 const formSchema = z.object({
   parentSku: z.string().min(1),
@@ -89,7 +91,6 @@ export default function ProductView() {
     }
   })
 
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -100,16 +101,34 @@ export default function ProductView() {
 
   const [getEmptyCart, { loading: loadingCart, error: errorCart }] = useMutation(CREATE_EMPTY_CART_GUEST)
   const [addConfigurableProductsToCart, { loading: loadingToCartConfigurable, error: errorToCartConfigurable }] = useMutation(ADD_CONFIGURABLE_PRODUCTS_TO_CART)
-  const [showAlert, setShowAler] = useState(false)
+  const [showAlert, setShowAlert] = useState(false)
+  const [getCart] = useLazyQuery(CART)
+  const dispatch = useDispatch()
+
+  async function getCartData(cartId: string) {
+    const { data: dataCart } = await getCart({
+      variables: {
+        cartId: cartId
+      },
+      fetchPolicy: 'network-only'
+    })
+    dispatch(setCart(dataCart.cart))
+  }
+
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!getCookie(namespaces.checkout.cartId)) {
+    const cartId = getCookie(namespaces.checkout.cartId);
+    if (!cartId) {
       const cart = await getEmptyCart();
       crearCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
       window.localStorage.setItem(namespaces.checkout.cartId, cart.data.createEmptyCart)
     }
-    const cartId = getCookie(namespaces.checkout.cartId);
+
     if (cartId) {
-      //add to cart
+      //add to cart 
+      const quantity = 1
+
       const { data: addToCart } = await addConfigurableProductsToCart({
         variables: {
           input: {
@@ -117,7 +136,7 @@ export default function ProductView() {
             cart_items: [{
               parent_sku: values.parentSku,
               data: {
-                quantity: 1,
+                quantity,
                 sku: values.sku
               }
             }]
@@ -126,35 +145,39 @@ export default function ProductView() {
       })
 
       if (addToCart.addConfigurableProductsToCart.cart) {
-        setShowAler(true);
+        setShowAlert(true)
+        getCartData(cartId)
+        setTimeout(()=> setShowAlert(false), 5000)
       }
     }
   }
 
   const [addSimpleProductsToCart, { loading: loadingCartSimple, error: errorToCartSimple }] = useMutation(ADD_SIMPLE_PRODUCTS_TO_CART)
   async function handleSimpleToCart() {
-    if (!getCookie(namespaces.checkout.cartId)) {
+    const cartId = getCookie(namespaces.checkout.cartId);
+    if (!cartId) {
       const cart = await getEmptyCart();
       crearCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
       window.localStorage.setItem(namespaces.checkout.cartId, cart.data.createEmptyCart)
     }
-
-    const cartId = getCookie(namespaces.checkout.cartId);
-    const { data: addToCart } = await addSimpleProductsToCart({
-      variables: {
-        input: {
-          cart_id: cartId,
-          cart_items: [{
-            data: {
-              quantity: 1,
-              sku: sku
-            }
-          }]
+    if (cartId) {
+      const { data: addToCart } = await addSimpleProductsToCart({
+        variables: {
+          input: {
+            cart_id: cartId,
+            cart_items: [{
+              data: {
+                quantity: 1,
+                sku: sku
+              }
+            }]
+          }
         }
+      })
+      if (addToCart.addSimpleProductsToCart) {
+        setShowAlert(true);
+        getCartData(cartId)
       }
-    })
-    if (addToCart.addSimpleProductsToCart) {
-      setShowAler(true);
     }
   }
 
@@ -171,83 +194,74 @@ export default function ProductView() {
     )
   }
 
-
   const product: Product = data.products.items.find((item: Product) => item.id == id);
-  const storedValue = localStorage.getItem(namespaces.store.storeConfig);
-  let storeConfig;
-  if (storedValue) {
-    storeConfig = JSON.parse(storedValue);
-  }
-
+  const storeConfig = getStoreConfig();  
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2">
-        <div className="p-2 col-span-1">
-          <ProductViewGellery mediaGallery={product.media_gallery} />
+      {(!loading && !error) && (
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          <div className="p-2 col-span-1">
+            <ProductViewGellery mediaGallery={product.media_gallery} />
+          </div>
+          <div className="p-2 col-span-1">
+            <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
+            <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
+              {product.name}
+            </h3>
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight">
+              <span>{getCurrencySymbol(storeConfig.locale.replace('_', '-'), product.price_range.maximum_price.final_price.currency)} {product.price_range.maximum_price.final_price.value} </span>
+            </h4>
+
+            {errorCart && (<AlertDestructive variant={Variant.destructive} message={errorCart.message} />)}
+            {errorToCartConfigurable && (<AlertDestructive variant={Variant.destructive} message={errorToCartConfigurable.message} />)}
+            {errorToCartSimple && (<AlertDestructive variant={Variant.destructive} message={errorToCartSimple.message} />)}
+            {showAlert && (<AlertDestructive variant={Variant.success} message="Product added successfully" />)}
+            {product.__typename === "ConfigurableProduct" && (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
+                  <FormField
+                    control={form.control}
+                    name="parentSku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input type="hidden" placeholder="sku" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <ProductVariations showLabels={true} configurableOptions={product.configurable_options} variants={product.variants} field={field} />
+                    )}
+                  />
+
+                  <div>
+                    <Button type="submit" className="mt-2">Add to cart</Button>
+                  </div>
+                </form>
+              </Form>
+            )}
+
+            {product.__typename == "SimpleProduct" && (
+              <div>
+                <Button type="button" onClick={handleSimpleToCart} className="mt-2">Add to cart</Button>
+              </div>
+            )}
+
+            {loadingCart || loadingToCartConfigurable || loadingCartSimple && (
+              <>
+                <Loading />
+              </>
+            )}
+          </div>
         </div>
-        <div className="p-2 col-span-1">
-          <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
-          <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
-            {product.name}
-          </h3>
-          <h4 className="scroll-m-20 text-xl font-semibold tracking-tight">
-            <span>{getCurrencySymbol(storeConfig.locale.replace('_', '-'), product.price_range.maximum_price.final_price.currency)} {product.price_range.maximum_price.final_price.value} </span>
-          </h4>
-
-          {errorCart && (<AlertDestructive variant={Variant.destructive} message={errorCart.message} />)}
-          {errorToCartConfigurable && (<AlertDestructive variant={Variant.destructive} message={errorToCartConfigurable.message} />)}
-          {errorToCartSimple && (<AlertDestructive variant={Variant.destructive} message={errorToCartSimple.message} />)}
-          {showAlert && (<AlertDestructive variant={Variant.success} message="Product added successfully" />)}
-          {product.__typename === "ConfigurableProduct" && (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
-                <FormField
-                  control={form.control}
-                  name="parentSku"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input type="hidden" placeholder="sku" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="sku"
-                  render={({ field }) => (
-                    <ProductVariations showLabels={true} configurableOptions={product.configurable_options} variants={product.variants} field={field} />
-                  )}
-                />
-
-                <div>
-                  <Button type="submit" className="mt-2">Add to cart</Button>
-                </div>
-              </form>
-            </Form>
-          )}
-
-          {product.__typename == "SimpleProduct" && (
-            <div>
-              <Button type="button" onClick={handleSimpleToCart} className="mt-2">Add to cart</Button>
-            </div>
-          )}
-
-          {loadingCart || loadingToCartConfigurable || loadingCartSimple && (
-            <>
-              <Loading />
-            </>
-          )}
-          {showAlert && (
-            <div className="mt-5">
-              <Link to="/checkout" className={buttonVariants({ variant: "link" })}>Process to checkout</Link>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </>
   )
 }

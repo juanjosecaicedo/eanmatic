@@ -9,6 +9,8 @@ import { crearCookie, getCookie, namespaces } from './lib/utils.ts';
 
 
 if (!getCookie(namespaces.store.storeCode)) {
+  console.log("wwntro");
+  
   crearCookie(namespaces.store.storeCode, 'default', 1)
 }
 
