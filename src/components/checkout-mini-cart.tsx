@@ -21,7 +21,7 @@ import ItemsCart from "./items-cart"
 
 export default function MiniCart() {
 
-  const locale = getStoreLocale()  
+  const locale = getStoreLocale()
   const cart: Cart | null | object = useSelector((state: RootState) => state.cart.value)
 
   return (
@@ -48,7 +48,7 @@ export default function MiniCart() {
               </SheetDescription>
             )}
           </SheetHeader>
-          <div className="min-h-[80vh]">
+          <div className="min-h-[73vh]">
             {cart && (
               <div className="my-2">
                 {'items' in cart && (
@@ -73,7 +73,10 @@ export default function MiniCart() {
                   </div>
                 )}
                 <SheetClose asChild>
-                  <Link to="/checkout" className={buttonVariants({ variant: "default" })}>Proceed to Checkout</Link>
+                  <div className="flex flex-col gap-3">
+                    <Link to="/checkout/cart" className={buttonVariants({ variant: "outline" })}>view cart</Link>
+                    <Link to="/checkout" className={buttonVariants({ variant: "default" })}>Proceed to Checkout</Link>
+                  </div>
                 </SheetClose>
               </div>
             </SheetFooter>

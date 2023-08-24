@@ -324,3 +324,22 @@ export const COUNTRIES = gql`
     }
   }
 `
+export const GET_ADYEN_KLARNA_DETAILS = gql`
+  query getAdyenKlarnaDetails($cartId: String!, $email: String!) {
+    getAdyenKlarnaDetails(
+      cart_id: $cartId
+      email: $email
+      ) {
+        resultCode
+        order_number
+        cart_id
+        action {
+        paymentMethodType
+        url
+        method
+        type
+        paymentData
+      }
+    }
+  }
+`

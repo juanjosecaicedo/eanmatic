@@ -20,6 +20,7 @@ import { getCookie, namespaces } from "./lib/utils"
 import { useDispatch } from "react-redux"
 import { setCart } from "./reducers/cart"
 import Test from "./pages/test"
+import CheckoutCart from "./pages/Checkout-cart"
 
 function App() {
 
@@ -47,6 +48,7 @@ function App() {
             <Route path="/" Component={Home} />
             <Route path="/test" Component={Test} />
             <Route path="/checkout" Component={Checkout} />
+            <Route path="/checkout/cart" Component={CheckoutCart} />
             <Route path="/customer-account-login" Component={CustomerAccountLogin} />
             <Route path="/customer-account-create" Component={CustomerAccountCreate} />
             <Route path="/customer-account" Component={CustomerAccount} />

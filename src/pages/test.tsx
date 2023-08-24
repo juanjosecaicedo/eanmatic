@@ -48,6 +48,15 @@ export default function Test() {
         </Alert>
       )}
 
+      <div className="grid grid-cols-2 gap-5">
+        <div className="p-3 bg-blue-300 col-span-2"></div>
+        <div className="p-3 bg-blue-300"></div>
+        <div className="p-3 bg-blue-300"></div>
+        <div className="p-3 bg-blue-300"></div>
+        <div className="p-3 bg-blue-300"></div>
+        <div className="p-3 bg-blue-300"></div>
+      </div>
+
     </div>
   )
 }

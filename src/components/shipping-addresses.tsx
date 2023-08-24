@@ -1,5 +1,15 @@
 import { Button } from "@/components/ui/button"
-import { CART, COUNTRIES, GET_ADYEN_PAYMEN_TMETHODS, SET_BILLING_ADDRESS_ON_CART, SET_GUEST_EMAIL_ON_CART, SET_PAYMENT_METHOD_ON_CART, SET_SHIPPING_ADDRESS_ON_CART, SET_SHIPPING_METHODS_ON_CART } from "@/graphql/checkout"
+import { 
+  CART, 
+  COUNTRIES, 
+  GET_ADYEN_KLARNA_DETAILS, 
+  GET_ADYEN_PAYMEN_TMETHODS, 
+  SET_BILLING_ADDRESS_ON_CART, 
+  SET_GUEST_EMAIL_ON_CART, 
+  SET_PAYMENT_METHOD_ON_CART, 
+  SET_SHIPPING_ADDRESS_ON_CART, 
+  SET_SHIPPING_METHODS_ON_CART 
+} from "@/graphql/checkout"
 import { AdyenPaymentMethods, AvailableShippingMethod, PaymentMethod, SetShippingAddressesOnCart } from "@/interfaces/Checkout"
 import { getCookie, namespaces } from "@/lib/utils"
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client"
@@ -37,6 +47,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 
 const formSchema = z.object({
@@ -50,6 +61,7 @@ const formSchema = z.object({
   postcode: z.string(),
   country_code: z.string(),
   telephone: z.string(),
+  email: z.string().email(),
   save_in_address_book: z.boolean()
 })
 
@@ -67,6 +79,14 @@ const FormSchemaPay = z.object({
 
 export default function ShippingAddresses() {
   const cartId = getCookie(namespaces.checkout.cartId);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!cartId) {
+      navigate('/checkout/cart')
+    }
+  }, [cartId, navigate])  
+
   const [setShippingAddressesOnCart, { loading, error }] = useMutation(SET_SHIPPING_ADDRESS_ON_CART)
   const [setShippingMethodsOnCart, { loading: loadingMethodsOnCart }] = useMutation(SET_SHIPPING_METHODS_ON_CART)
   const [shipping, setShipping] = useState<null | SetShippingAddressesOnCart>(null);
@@ -75,6 +95,7 @@ export default function ShippingAddresses() {
   const [getCart] = useLazyQuery(CART)
   const dispatch = useDispatch()
   const [address, setAddress] = useState<ShippingAddressCart | undefined>();
+  const [email, setEmail] = useState<string>()
 
 
   async function getCartData() {
@@ -91,16 +112,17 @@ export default function ShippingAddresses() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstname: "John",
-      lastname: "Doe",
-      company: "Company Name",
+      firstname: "Test",
+      lastname: "Person-pt",
+      company: "",
       street1: "3320 N Crescent Dr",
-      street2: "Beverly Hills",
-      region_id: '12',
-      postcode: "90210",
-      country_code: "US",
-      telephone: "123-456-0000",
-      city: 'Los Angeles',
+      street2: "",
+      region_id: '1023',
+      postcode: "1990-094",
+      country_code: "PT",
+      telephone: "+351212162265",
+      city: 'Lisboa',
+      email: 'customer@email.pt',
       save_in_address_book: false
     },
   })
@@ -115,9 +137,11 @@ export default function ShippingAddresses() {
       region_id: values.region_id,
       postcode: values.postcode,
       country_code: values.country_code,
-      telephone: values.telephone,
+      telephone: values.telephone,      
       save_in_address_book: values.save_in_address_book
     }
+
+    setEmail(values.email)
 
     setAddress(_address)
     const { data: dataShipping } = await setShippingAddressesOnCart({
@@ -165,7 +189,7 @@ export default function ShippingAddresses() {
       variables: {
         input: {
           cart_id: cartId,
-          email: 'guest@example.com'
+          email: email
         }
       }
     })
@@ -181,6 +205,7 @@ export default function ShippingAddresses() {
 
   const [setPaymentMethodOnCart, { loading: loadingSetPaymentMethodOnCart, error: errorSetPaymentMethodOnCart }] = useMutation(SET_PAYMENT_METHOD_ON_CART)
   const [setBillingAddressOnCart, { loading: loadingSetBillingAddressOnCart }] = useMutation(SET_BILLING_ADDRESS_ON_CART)
+  const [getAdyenKlarnaDetails, {loading: loadingGetAdyenKlarnaDetails}] = useLazyQuery(GET_ADYEN_KLARNA_DETAILS)
   async function onSubmitPay(values: z.infer<typeof FormSchemaPay>) {
     await setBillingAddressOnCart({
       variables: {
@@ -198,10 +223,7 @@ export default function ShippingAddresses() {
     let code = values.code
     if (typeof payment !== "undefined") {
       code = "adyen_hpp"
-    }
-
-    console.log(adyenPayments);
-    
+    }       
 
     const { data: setPayment } = await setPaymentMethodOnCart({
       variables: {
@@ -214,10 +236,22 @@ export default function ShippingAddresses() {
       }
     })
 
-    console.log(setPayment);
+    // Set payment with klarna_account
+    if(setPayment.setPaymentMethodOnCart && values.code == "klarna_account") {      
+      const _email = email?.length ? email : 'customer@email.pt'
+      
+      const {data: klarnaDetails } = await getAdyenKlarnaDetails({
+        variables: {
+          cartId: cartId,
+          email: _email
+        }
+      })
 
-
-
+      console.log(klarnaDetails.getAdyenKlarnaDetails?.action);
+      if(klarnaDetails.getAdyenKlarnaDetails?.action.type == "redirect") {        
+        window.location.href = klarnaDetails.getAdyenKlarnaDetails?.action.url
+      }      
+    }
   }
 
   const [regions, setRegions] = useState<AvailableRegion[] | null>(null);
@@ -248,7 +282,21 @@ export default function ShippingAddresses() {
         <>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmitShippingAddress)} className="space-y-8">
+              
               <div className="grid md:grid-cols-2 gap-4">
+              <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="firstname"
@@ -492,7 +540,7 @@ export default function ShippingAddresses() {
       {
         shippingMethodSelected && (
           <div>Payment methods
-            {(loadingAdyenPaymentMethods || loadingSetBillingAddressOnCart || loadingSetPaymentMethodOnCart) && (
+            {(loadingAdyenPaymentMethods || loadingSetBillingAddressOnCart || loadingSetPaymentMethodOnCart || loadingGetAdyenKlarnaDetails) && (
               <div className="mt-10 flex justify-center">
                 <Loader2 className={`mr-2 h-10 w-10 animate-spin`} />
               </div>
