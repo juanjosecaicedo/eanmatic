@@ -2,16 +2,13 @@ import { Button } from "@/components/ui/button"
 import { 
   CART, 
   COUNTRIES, 
-  GET_ADYEN_KLARNA_DETAILS, 
-  GET_ADYEN_PAYMEN_TMETHODS, 
-  SET_BILLING_ADDRESS_ON_CART, 
+  GET_ADYEN_PAYMEN_TMETHODS,
   SET_GUEST_EMAIL_ON_CART, 
-  SET_PAYMENT_METHOD_ON_CART, 
   SET_SHIPPING_ADDRESS_ON_CART, 
   SET_SHIPPING_METHODS_ON_CART 
 } from "@/graphql/checkout"
-import { AdyenPaymentMethods, AvailableShippingMethod, PaymentMethod, SetShippingAddressesOnCart } from "@/interfaces/Checkout"
-import { getCookie, namespaces } from "@/lib/utils"
+import { AdyenPaymentMethods, AvailableShippingMethod, SetShippingAddressesOnCart } from "@/interfaces/Checkout"
+import { namespaces } from "@/lib/utils"
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client"
 import { useEffect, useState } from "react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -41,14 +38,9 @@ import {
 import { SelectGroup, SelectLabel } from "@radix-ui/react-select"
 import { AvailableRegion, Country } from "@/interfaces/Countries"
 import { ShippingAddressCart } from "@/interfaces/Address"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-
+import CookieManager from "@/lib/CookieManager"
+import AdyenPaymentsList from "./adyen-payment-list"
 
 const formSchema = z.object({
   firstname: z.string(),
@@ -71,14 +63,9 @@ const FormSchemaShippingMethod = z.object({
   }),
 })
 
-const FormSchemaPay = z.object({
-  code: z.string({
-    required_error: "You need to select a payment method.",
-  }),
-})
 
 export default function ShippingAddresses() {
-  const cartId = getCookie(namespaces.checkout.cartId);
+  const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -163,9 +150,6 @@ export default function ShippingAddresses() {
     resolver: zodResolver(FormSchemaShippingMethod),
   })
 
-  const formPay = useForm<z.infer<typeof FormSchemaPay>>({
-    resolver: zodResolver(FormSchemaPay),
-  })
 
   const [setGuestEmailOnCart] = useMutation(SET_GUEST_EMAIL_ON_CART)
   const [adyenPaymentMethods, { loading: loadingAdyenPaymentMethods }] = useLazyQuery(GET_ADYEN_PAYMEN_TMETHODS)
@@ -203,56 +187,8 @@ export default function ShippingAddresses() {
     setAdyenPayments(payments.adyenPaymentMethods)
   }
 
-  const [setPaymentMethodOnCart, { loading: loadingSetPaymentMethodOnCart, error: errorSetPaymentMethodOnCart }] = useMutation(SET_PAYMENT_METHOD_ON_CART)
-  const [setBillingAddressOnCart, { loading: loadingSetBillingAddressOnCart }] = useMutation(SET_BILLING_ADDRESS_ON_CART)
-  const [getAdyenKlarnaDetails, {loading: loadingGetAdyenKlarnaDetails}] = useLazyQuery(GET_ADYEN_KLARNA_DETAILS)
-  async function onSubmitPay(values: z.infer<typeof FormSchemaPay>) {
-    await setBillingAddressOnCart({
-      variables: {
-        input: {
-          cart_id: cartId,
-          billing_address: {
-            address: address
-          }
-        }
-      }
-    })
-
-    //set Payment Code: adyen_hpp
-    const payment = adyenPayments?.paymentMethodsResponse.paymentMethods.find((payment: PaymentMethod) => payment.type == values.code)
-    let code = values.code
-    if (typeof payment !== "undefined") {
-      code = "adyen_hpp"
-    }       
-
-    const { data: setPayment } = await setPaymentMethodOnCart({
-      variables: {
-        input: {
-          cart_id: cartId,
-          payment_method: {
-            code
-          }
-        }
-      }
-    })
-
-    // Set payment with klarna_account
-    if(setPayment.setPaymentMethodOnCart && values.code == "klarna_account") {      
-      const _email = email?.length ? email : 'customer@email.pt'
-      
-      const {data: klarnaDetails } = await getAdyenKlarnaDetails({
-        variables: {
-          cartId: cartId,
-          email: _email
-        }
-      })
-
-      console.log(klarnaDetails.getAdyenKlarnaDetails?.action);
-      if(klarnaDetails.getAdyenKlarnaDetails?.action.type == "redirect") {        
-        window.location.href = klarnaDetails.getAdyenKlarnaDetails?.action.url
-      }      
-    }
-  }
+ 
+  
 
   const [regions, setRegions] = useState<AvailableRegion[] | null>(null);
 
@@ -537,63 +473,9 @@ export default function ShippingAddresses() {
           </>
         )
       }
-      {
-        shippingMethodSelected && (
-          <div>Payment methods
-            {(loadingAdyenPaymentMethods || loadingSetBillingAddressOnCart || loadingSetPaymentMethodOnCart || loadingGetAdyenKlarnaDetails) && (
-              <div className="mt-10 flex justify-center">
-                <Loader2 className={`mr-2 h-10 w-10 animate-spin`} />
-              </div>
-            )}
-            {errorSetPaymentMethodOnCart && (
-              <Alert variant="destructive" className="my-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error!</AlertTitle>
-                <AlertDescription>
-                  {errorSetPaymentMethodOnCart.message}
-                </AlertDescription>
-              </Alert>
-            )}
-            {(!loadingAdyenPaymentMethods && adyenPayments) && (
-              <Form {...formPay}>
-                <form onSubmit={formPay.handleSubmit(onSubmitPay)} className="my-5 space-y-6">
-                  <FormField
-                    control={formPay.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1">
-                          <FormItem className="space-y-3">
-                            {adyenPayments?.paymentMethodsResponse.paymentMethods.map((payment: PaymentMethod) => (
-                              <FormItem className="flex items-center space-x-3 space-y-0 " key={payment.type}>
-                                <FormControl>
-                                  <Label
-                                    htmlFor={payment.type}
-                                    className="flex w-full flex-col justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
-                                    <RadioGroupItem value={payment.type} id={payment.type} className="sr-only" />
-                                    <span>{payment.name}</span>
-                                    <div className="flex justify-between w-full">
-
-                                    </div>
-                                  </Label>
-                                </FormControl>
-                              </FormItem>
-                            ))}
-                            <FormMessage />
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                    )} />
-                  <Button type="submit" className="w-full">Continue</Button>
-                </form>
-              </Form>
-            )}
-          </div>
-        )
-      }
+      {shippingMethodSelected && (
+        <AdyenPaymentsList loadingAdyenPaymentMethods={loadingAdyenPaymentMethods} adyenPayments={adyenPayments} address={address} email={email} />
+      )}
     </>
   )
 }

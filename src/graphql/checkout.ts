@@ -343,3 +343,24 @@ export const GET_ADYEN_KLARNA_DETAILS = gql`
     }
   }
 `
+
+export const PALCE_ORDER = gql`
+  mutation PlaceOrder($input: PlaceOrderInput!){
+    placeOrder(input: $input) {
+      order {
+        order_number
+        cart_id
+      }
+    }
+  }
+`
+
+export const SET_PAYMENT_METHOD_AND_PLACE_ORDER = gql`
+  mutation SetPaymentMethodAndPlaceOrder($input: SetPaymentMethodAndPlaceOrderInput!){
+    setPaymentMethodAndPlaceOrder(input: $input) {
+      order {
+        order_id
+      }
+    }
+  }
+`

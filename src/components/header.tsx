@@ -45,7 +45,8 @@ import {
   AlertTitle,
 } from "@/components/ui/alert"
 import { Check } from "lucide-react"
-import { crearCookie, getCookie, namespaces } from "@/lib/utils"
+import { namespaces } from "@/lib/utils"
+import CookieManager from "@/lib/CookieManager"
 
 const FormSchema = z.object({
   storeCode: z.string({
@@ -57,7 +58,7 @@ export function HeaderNavigationMenu() {
   const { data, loading, error } = useQuery(GET_ALL_STORES, {
     context: {
       headers: {
-        'store': getCookie(namespaces.store.storeCode) ?? 'default'
+        'store': CookieManager.getCookie(namespaces.store.storeCode) ?? 'default'
       }
     }
   })
@@ -69,13 +70,13 @@ export function HeaderNavigationMenu() {
 
   function onSubmit(values: z.infer<typeof FormSchema>) {
     setShowAlert(true)
-    crearCookie(namespaces.store.storeCode, values.storeCode, 5)
+    CookieManager.createCookie(namespaces.store.storeCode, values.storeCode, 5)
     localStorage.setItem(namespaces.store.storeCode, values.storeCode)
     setTimeout(() => setShowAlert(false), 2000)
     setTimeout(() => window.location.reload(), 3000)
   }
 
-  const selected = getCookie(namespaces.store.storeCode)
+  const selected = CookieManager.getCookie(namespaces.store.storeCode)
   const { data: dataSore, loading: loadingStore } = useQuery(GET_STORE_CONFIG, {
     context: {
       headers: {

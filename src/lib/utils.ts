@@ -19,7 +19,7 @@ export const namespaces = {
   }
 }
 
-export function crearCookie(name: string, value: string | number, daysExpiration: number) {
+/*export function crearCookie(name: string, value: string | number, daysExpiration: number) {
   const expirationDate = new Date();
   expirationDate.setTime(expirationDate.getTime() + (daysExpiration * 24 * 60 * 60 * 1000));
   const expiration = "expires=" + expirationDate.toUTCString();
@@ -40,6 +40,10 @@ export function getCookie(name: string) {
 
   return null; // Retorna null si no se encuentra la cookie
 }
+
+export function deleteCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+}*/
 
 export function getStoreConfig() {
   const data = window.localStorage.getItem(namespaces.store.storeConfig)

@@ -5,13 +5,12 @@ import './globals.css'
 import { ApolloClient, InMemoryCache, ApolloProvider, HttpLink } from '@apollo/client';
 import { Provider } from 'react-redux'
 import { store } from '@/store.ts';
-import { crearCookie, getCookie, namespaces } from './lib/utils.ts';
+import { namespaces } from './lib/utils.ts';
+import CookieManager from '@/lib/CookieManager.ts';
 
 
-if (!getCookie(namespaces.store.storeCode)) {
-  console.log("wwntro");
-  
-  crearCookie(namespaces.store.storeCode, 'default', 1)
+if (!CookieManager.getCookie(namespaces.store.storeCode)) {  
+  CookieManager.createCookie(namespaces.store.storeCode, 'default', 1)
 }
 
 
@@ -24,7 +23,7 @@ const client = new ApolloClient({
       'Accept': '*/*',
       'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
-      'store': getCookie(namespaces.store.storeCode) ?? 'default'
+      'store': CookieManager.getCookie(namespaces.store.storeCode) ?? 'default'
     }
   }),
 

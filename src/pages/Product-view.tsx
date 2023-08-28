@@ -13,6 +13,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -24,14 +25,16 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert"
-import { crearCookie, getCookie, getCurrencySymbol, getStoreConfig, namespaces } from "@/lib/utils";
+import { getCurrencySymbol, getStoreConfig, namespaces } from "@/lib/utils";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { setCart } from "@/reducers/cart";
+import CookieManager from "@/lib/CookieManager";
 
 const formSchema = z.object({
   parentSku: z.string().min(1),
-  sku: z.string().min(1)
+  sku: z.string().min(1),
+  quantity: z.string()
 })
 
 interface Loading {
@@ -95,7 +98,8 @@ export default function ProductView() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       parentSku: sku,
-      sku: ""
+      sku: "",
+      quantity: "1"
     },
   })
 
@@ -118,17 +122,15 @@ export default function ProductView() {
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const cartId = getCookie(namespaces.checkout.cartId);
+    const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
     if (!cartId) {
       const cart = await getEmptyCart();
-      crearCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
+      CookieManager.createCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
       window.localStorage.setItem(namespaces.checkout.cartId, cart.data.createEmptyCart)
     }
 
     if (cartId) {
       //add to cart 
-      const quantity = 1
-
       const { data: addToCart } = await addConfigurableProductsToCart({
         variables: {
           input: {
@@ -136,7 +138,7 @@ export default function ProductView() {
             cart_items: [{
               parent_sku: values.parentSku,
               data: {
-                quantity,
+                quantity: values.quantity,
                 sku: values.sku
               }
             }]
@@ -147,17 +149,19 @@ export default function ProductView() {
       if (addToCart.addConfigurableProductsToCart.cart) {
         setShowAlert(true)
         getCartData(cartId)
-        setTimeout(()=> setShowAlert(false), 5000)
+        setTimeout(() => setShowAlert(false), 5000)
       }
     }
   }
 
+  const [qty, setQty] = useState<number|string>(1)
+
   const [addSimpleProductsToCart, { loading: loadingCartSimple, error: errorToCartSimple }] = useMutation(ADD_SIMPLE_PRODUCTS_TO_CART)
   async function handleSimpleToCart() {
-    const cartId = getCookie(namespaces.checkout.cartId);
+    const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
     if (!cartId) {
       const cart = await getEmptyCart();
-      crearCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
+      CookieManager.createCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
       window.localStorage.setItem(namespaces.checkout.cartId, cart.data.createEmptyCart)
     }
     if (cartId) {
@@ -167,7 +171,7 @@ export default function ProductView() {
             cart_id: cartId,
             cart_items: [{
               data: {
-                quantity: 1,
+                quantity: qty,
                 sku: sku
               }
             }]
@@ -195,7 +199,7 @@ export default function ProductView() {
   }
 
   const product: Product = data.products.items.find((item: Product) => item.id == id);
-  const storeConfig = getStoreConfig();  
+  const storeConfig = getStoreConfig();
 
   return (
     <>
@@ -241,6 +245,20 @@ export default function ProductView() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem className="my-5">
+                        <FormLabel>Qty:</FormLabel>
+                        <FormControl>
+                          <Input type="number" className="max-w-[60px]" min={1} placeholder="quantity" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <div>
                     <Button type="submit" className="mt-2">Add to cart</Button>
                   </div>
@@ -250,6 +268,7 @@ export default function ProductView() {
 
             {product.__typename == "SimpleProduct" && (
               <div>
+                <Input type="number" placeholder="Qty" className="max-w-[60px]" min={1} value={qty} onChange={e => setQty(e.target.value)} />
                 <Button type="button" onClick={handleSimpleToCart} className="mt-2">Add to cart</Button>
               </div>
             )}

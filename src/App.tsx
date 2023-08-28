@@ -10,21 +10,23 @@ import Checkout from '@/pages/Checkout-index'
 import CustomerAccountLogin from '@/pages/Customer-account-login'
 import CustomerAccountCreate from '@/pages/Customer-account-create'
 import CustomerAccount from '@/pages/Customer-account'
-import { HeaderNavigationMenu } from './components/header'
+import { HeaderNavigationMenu } from '@/components/header'
 import Home from '@/pages/Home'
-import ProductView from "./pages/Product-view"
+import ProductView from "@/pages/Product-view"
 import { useEffect } from "react"
 import { useQuery } from "@apollo/client"
 import { CART } from "./graphql/checkout"
-import { getCookie, namespaces } from "./lib/utils"
+import { namespaces } from "@/lib/utils"
 import { useDispatch } from "react-redux"
-import { setCart } from "./reducers/cart"
-import Test from "./pages/test"
-import CheckoutCart from "./pages/Checkout-cart"
+import { setCart } from "@/reducers/cart"
+import Test from "@/pages/test"
+import CheckoutCart from "@/pages/Checkout-cart"
+import CheckoutSuccess from "@/pages/Checkout-success"
+import CookieManager from "@/lib/CookieManager"
+import CheckoutFailed from "@/pages/Checkout-failed"
 
 function App() {
-
-  const cartId = getCookie(namespaces.checkout.cartId);
+  const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
   const dispatch = useDispatch()
   const { data, loading, error } = useQuery(CART, {
     skip: !cartId ? true : false,
@@ -48,6 +50,8 @@ function App() {
             <Route path="/" Component={Home} />
             <Route path="/test" Component={Test} />
             <Route path="/checkout" Component={Checkout} />
+            <Route path="/checkout/success" Component={CheckoutSuccess} />
+            <Route path="/checkout/failed" Component={CheckoutFailed} />
             <Route path="/checkout/cart" Component={CheckoutCart} />
             <Route path="/customer-account-login" Component={CustomerAccountLogin} />
             <Route path="/customer-account-create" Component={CustomerAccountCreate} />

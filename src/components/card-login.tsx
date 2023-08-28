@@ -25,7 +25,8 @@ import { useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { GENERATE_CUSTOMER_TOKEN } from "@/graphql/customer"
-import { crearCookie, getCookie, namespaces } from "@/lib/utils"
+import { namespaces } from "@/lib/utils"
+import CookieManager from "@/lib/CookieManager"
 
 const formSchema = z.object({
   email: z.string().email({
@@ -65,7 +66,7 @@ export function CardAccountLogin() {
       if (data.generateCustomerToken) {
         const { token } = data.generateCustomerToken;
         window.localStorage.setItem(namespaces.customer.token, token);
-        crearCookie(namespaces.customer.token, token, 1);
+        CookieManager.createCookie(namespaces.customer.token, token, 1);
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -90,7 +91,7 @@ export function CardAccountLogin() {
         </Alert>
       }
 
-      {getCookie(namespaces.customer.token) && (
+      {CookieManager.getCookie(namespaces.customer.token) && (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Card>

@@ -11,15 +11,8 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
-import { gql, useLazyQuery } from "@apollo/client"
-import { useState } from "react"
 
 
-const CREATE_EMPTY_CART = gql`
-  mutation {
-    createEmptyCart
-  }
-`
 interface AddTocart {
   parentSku: string
 }

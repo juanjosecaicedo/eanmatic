@@ -25,7 +25,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { useState } from "react"
 import { CREATE_CUSTOMER, GENERATE_CUSTOMER_TOKEN } from "@/graphql/customer"
-import { crearCookie, namespaces } from "@/lib/utils"
+import { namespaces } from "@/lib/utils"
+import CookieManager from "@/lib/CookieManager"
 
 const messagePasswordError = 'Minimum of different classes of characters in password is %1. Classes of characters: Lower Case, Upper Case, Digits, Special Characters.';
 const minPassword = 8;
@@ -89,7 +90,7 @@ export default function CustomerAccountCreate() {
             }
           })
           console.log(data)
-          crearCookie(namespaces.customer.token, data.token, 1)
+          CookieManager.createCookie(namespaces.customer.token, data.token, 1)
           window.localStorage.setItem(namespaces.customer.token, data.token)
         } catch (error) {
           if (error instanceof Error) {
