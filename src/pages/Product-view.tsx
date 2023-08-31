@@ -25,7 +25,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert"
-import { getCurrencySymbol, getStoreConfig, namespaces } from "@/lib/utils";
+import { namespaces, priceFormat } from "@/lib/utils";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { setCart } from "@/reducers/cart";
@@ -119,8 +119,6 @@ export default function ProductView() {
     dispatch(setCart(dataCart.cart))
   }
 
-
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
     if (!cartId) {
@@ -154,7 +152,7 @@ export default function ProductView() {
     }
   }
 
-  const [qty, setQty] = useState<number|string>(1)
+  const [qty, setQty] = useState<number | string>(1)
 
   const [addSimpleProductsToCart, { loading: loadingCartSimple, error: errorToCartSimple }] = useMutation(ADD_SIMPLE_PRODUCTS_TO_CART)
   async function handleSimpleToCart() {
@@ -199,7 +197,6 @@ export default function ProductView() {
   }
 
   const product: Product = data.products.items.find((item: Product) => item.id == id);
-  const storeConfig = getStoreConfig();
 
   return (
     <>
@@ -209,21 +206,23 @@ export default function ProductView() {
             <ProductViewGellery mediaGallery={product.media_gallery} />
           </div>
           <div className="p-2 col-span-1">
+            <div className="my-3">
+              {showAlert && (<AlertDestructive variant={Variant.success} message="Product added successfully" />)}
+            </div>
             <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
             <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
               {product.name}
             </h3>
             <h4 className="scroll-m-20 text-xl font-semibold tracking-tight">
-              <span>{getCurrencySymbol(storeConfig.locale.replace('_', '-'), product.price_range.maximum_price.final_price.currency)} {product.price_range.maximum_price.final_price.value} </span>
+              <span>{priceFormat(product.price_range.maximum_price.final_price.value)}</span>
             </h4>
 
             {errorCart && (<AlertDestructive variant={Variant.destructive} message={errorCart.message} />)}
             {errorToCartConfigurable && (<AlertDestructive variant={Variant.destructive} message={errorToCartConfigurable.message} />)}
             {errorToCartSimple && (<AlertDestructive variant={Variant.destructive} message={errorToCartSimple.message} />)}
-            {showAlert && (<AlertDestructive variant={Variant.success} message="Product added successfully" />)}
             {product.__typename === "ConfigurableProduct" && (
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0 mt-5">
                   <FormField
                     control={form.control}
                     name="parentSku"
@@ -267,7 +266,7 @@ export default function ProductView() {
             )}
 
             {product.__typename == "SimpleProduct" && (
-              <div>
+              <div className="mt-5">
                 <Input type="number" placeholder="Qty" className="max-w-[60px]" min={1} value={qty} onChange={e => setQty(e.target.value)} />
                 <Button type="button" onClick={handleSimpleToCart} className="mt-2">Add to cart</Button>
               </div>

@@ -8,7 +8,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export const namespaces = {
   checkout: {
-    cartId: "CART_ID"
+    cartId: "CART_ID",
+    lastOrder: 'LAST_ORDER',
+    paymentType: 'PAYMENT_TYPE',
+    cartData: 'CART_DATA',
+    adyenSession: 'ADYEN_SESSION'
   },
   customer: {
     token: "CUSTOMER_TOKEN"
@@ -19,36 +23,10 @@ export const namespaces = {
   }
 }
 
-/*export function crearCookie(name: string, value: string | number, daysExpiration: number) {
-  const expirationDate = new Date();
-  expirationDate.setTime(expirationDate.getTime() + (daysExpiration * 24 * 60 * 60 * 1000));
-  const expiration = "expires=" + expirationDate.toUTCString();
-  document.cookie = name + "=" + value + ";" + expiration + ";path=/";
-}
-
-export function getCookie(name: string) {
-  const cookies = document.cookie.split("; ");
-  for (let i = 0; i < cookies.length; i++) {
-    const cookieParts = cookies[i].split("=");
-    const nameCookie = decodeURIComponent(cookieParts[0]);
-    const valueCookie = decodeURIComponent(cookieParts[1]);
-
-    if (nameCookie === name) {
-      return valueCookie;
-    }
-  }
-
-  return null; // Retorna null si no se encuentra la cookie
-}
-
-export function deleteCookie(name: string) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-}*/
-
 export function getStoreConfig() {
   const data = window.localStorage.getItem(namespaces.store.storeConfig)
-  
-  if (data && data != "undefined")  {
+
+  if (data && data != "undefined") {
     return JSON.parse(data)
   }
   return false;
@@ -74,4 +52,10 @@ export function getStoreLocale(): string {
     locale = storeConfig.locale.replace('_', '-')
   }
   return locale
+}
+
+export function priceFormat(price: number) {
+  const currency = getStoreConfig().base_currency_code
+  
+  return new Intl.NumberFormat(getStoreLocale(), { style: 'currency', currency }).format(price)
 }

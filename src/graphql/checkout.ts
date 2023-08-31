@@ -364,3 +364,28 @@ export const SET_PAYMENT_METHOD_AND_PLACE_ORDER = gql`
     }
   }
 `
+
+export const ADYEN_PAYMENT_STATUS = gql`
+  query AdyenPaymentStatus($orderNumber: String!, $cartId: String!){
+    adyenPaymentStatus(orderNumber: $orderNumber, cartId: $cartId) {
+      isFinal
+      resultCode
+      additionalData
+      action
+    }
+  }
+`
+
+export const CREATE_ADYEN_SESSION = gql`
+  mutation CreateAdyenSession($input: CreateAdyenSessionInput!) {
+    createAdyenSession(input: $input) {
+      sessionData
+      id
+      merchantAccount
+      reference
+      returnUrl
+      expiresAt
+      countryCode
+    }
+  }
+`

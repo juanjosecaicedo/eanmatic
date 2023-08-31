@@ -10,14 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { getCurrencySymbol, getStoreLocale } from "@/lib/utils"
+import { priceFormat } from "@/lib/utils"
 import ItemsCart from "./items-cart"
 
 
 export default function Summary() {
 
-  const cart: Cart | null | object = useSelector((state: RootState) => state.cart.value)
-  const locale = getStoreLocale()
+  const cart: Cart | null | object = useSelector((state: RootState) => state.cart.value)  
 
   return (
     <div>
@@ -36,7 +35,7 @@ export default function Summary() {
                 <p className="text-sm text-muted-foreground">
                   {'prices' in cart && (
                     <>
-                      {getCurrencySymbol(locale, cart.prices.subtotal_excluding_tax.currency)} {cart.prices.subtotal_excluding_tax.value}
+                      {priceFormat(cart.prices.subtotal_excluding_tax.value)}
                     </>
                   )}
                 </p>
@@ -48,7 +47,7 @@ export default function Summary() {
                 <p className="text-sm text-muted-foreground">
                   {'prices' in cart && (
                     <>
-                      {getCurrencySymbol(locale, cart.prices.grand_total.currency)} {cart.prices.grand_total.value}
+                      {priceFormat(cart.prices.grand_total.value)}
                     </>
                   )}
                 </p>
@@ -58,7 +57,7 @@ export default function Summary() {
               {'items' in cart && (
                 <>
                   <p className="mb-3 px-2">Items: {cart.items.length}</p>
-                  <ItemsCart locale={locale} items={cart.items} />
+                  <ItemsCart items={cart.items} />
                 </>
               )}
             </div>

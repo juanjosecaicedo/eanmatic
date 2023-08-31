@@ -105,3 +105,16 @@ export interface Configuration2 {
   merchantName?: string
   __typename: string
 }
+
+
+
+export interface CreateAdyenSession {
+  sessionData: string
+  id: string
+  merchantAccount: string
+  reference: string
+  returnUrl: string
+  expiresAt: string
+  countryCode: string
+  __typename: string
+}

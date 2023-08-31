@@ -93,6 +93,7 @@ export default function ShippingAddresses() {
       fetchPolicy: 'network-only'
     })
     dispatch(setCart(dataCart.cart))
+    localStorage.setItem(namespaces.checkout.cartData, JSON.stringify(dataCart.cart))
   }
 
 

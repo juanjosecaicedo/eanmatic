@@ -14,14 +14,12 @@ import { useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { Cart } from "@/interfaces/Cart"
 import { Link } from "react-router-dom"
-import { getCurrencySymbol, getStoreLocale } from "@/lib/utils"
+import { priceFormat } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import ItemsCart from "./items-cart"
 
 
 export default function MiniCart() {
-
-  const locale = getStoreLocale()
   const cart: Cart | null | object = useSelector((state: RootState) => state.cart.value)
 
   return (
@@ -52,7 +50,7 @@ export default function MiniCart() {
             {cart && (
               <div className="my-2">
                 {'items' in cart && (
-                  <ItemsCart locale={locale} items={cart.items} />
+                  <ItemsCart items={cart.items} />
                 )}
               </div>
             )}
@@ -64,11 +62,11 @@ export default function MiniCart() {
                   <div>
                     <div className="flex justify-between mb-2 text-sm ">
                       <div className="text-muted-foreground">Cart Subtotal:</div>
-                      <div className="font-bold">{getCurrencySymbol(locale, cart.prices.subtotal_excluding_tax.currency)} {cart.prices.subtotal_excluding_tax.value}</div>
+                      <div className="font-bold">{priceFormat(cart.prices.subtotal_excluding_tax.value)}</div>
                     </div>
                     <div className="flex justify-between mb-4 text-lg">
                       <div className="text-muted-foreground">Cart Total:</div>
-                      <div className="font-bold">{getCurrencySymbol(locale, cart.prices.grand_total.currency)} {cart.prices.grand_total.value}</div>
+                      <div className="font-bold">{priceFormat(cart.prices.grand_total.value)}</div>
                     </div>
                   </div>
                 )}

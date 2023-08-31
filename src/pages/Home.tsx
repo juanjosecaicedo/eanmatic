@@ -11,7 +11,7 @@ import { Link } from "react-router-dom"
 import ProductVariations from "@/components/product-variations"
 import { Loader2 } from "lucide-react"
 import { GET_PRODUCTS } from "@/graphql/product"
-import { getCurrencySymbol, getStoreLocale } from "@/lib/utils"
+import { priceFormat } from "@/lib/utils"
 
 export default function Home() {
   const { data, loading, error } = useQuery(GET_PRODUCTS);
@@ -31,7 +31,7 @@ export default function Home() {
       </div>
     );
   }
-  const locale = getStoreLocale()
+  
   const { items } = data.products;
   return (
     <>
@@ -53,7 +53,7 @@ export default function Home() {
                 </CardDescription>
                 <span className="text-sm">SKU: <strong>{product.sku}</strong></span>
                 <div className="flex">
-                  <span>{getCurrencySymbol(locale, product.price_range.maximum_price.final_price.currency)}{product.price_range.maximum_price.final_price.value} </span>
+                  <span>{priceFormat(product.price_range.maximum_price.final_price.value)}</span>
                 </div>
                 <ProductVariations variants={product.variants} configurableOptions={product.configurable_options} />
               </CardContent>

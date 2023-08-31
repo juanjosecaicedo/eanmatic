@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { AdyenPaymentMethods, PaymentMethod } from "@/interfaces/Checkout"
-import { SET_BILLING_ADDRESS_ON_CART, SET_GUEST_EMAIL_ON_CART } from "@/graphql/checkout"
+import { CREATE_ADYEN_SESSION, SET_BILLING_ADDRESS_ON_CART, SET_GUEST_EMAIL_ON_CART } from "@/graphql/checkout"
 import CookieManager from "@/lib/CookieManager"
 import { namespaces } from "@/lib/utils"
 import { ShippingAddressCart } from "@/interfaces/Address"
@@ -43,21 +43,12 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
     resolver: zodResolver(FormSchemaPay),
   })
 
-  console.log(adyenPayments);
-  
-  //const [setPaymentMethodOnCart, { loading: loadingSetPaymentMethodOnCart, error: errorSetPaymentMethodOnCart }] = useMutation(SET_PAYMENT_METHOD_ON_CART)
+  CookieManager.createCookie(namespaces.checkout.paymentType, 'adyen_hpp', 1)
   const [setBillingAddressOnCart, { loading: loadingSetBillingAddressOnCart }] = useMutation(SET_BILLING_ADDRESS_ON_CART)
-
-  async function onSubmitPay(values: z.infer<typeof FormSchemaPay>) {
-    //set Payment Code: adyen_hpp
-    console.log(values);
-    
-  }
-
   const [selectMentod, setSeletedMethod] = useState<string | null>(null)
-
-
-  const [ setGuestEmailOnCart, {loading: loadingSetGuestEmailOnCart} ] = useMutation(SET_GUEST_EMAIL_ON_CART)
+  const [setGuestEmailOnCart, { loading: loadingSetGuestEmailOnCart }] = useMutation(SET_GUEST_EMAIL_ON_CART)
+  const [createAdyenSession, { loading: loadingCreateAdyenSession }] = useMutation(CREATE_ADYEN_SESSION)
+  const [adyenSession, setAdyenSession] = useState()
   async function setBillingAddress(type: string) {
     setSeletedMethod(type)
     await setBillingAddressOnCart({
@@ -79,6 +70,33 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
         }
       }
     })
+
+
+    if (type == "scheme" && !CookieManager.getCookie(namespaces.checkout.adyenSession)) {
+      let cart;
+      const data = localStorage.getItem(namespaces.checkout.cartData);
+      if (data != null) {
+        cart = JSON.parse(data)
+      }
+
+      const { data: dataSession } = await createAdyenSession({
+        variables: {
+          input: {
+            amount: {
+              currency: cart?.prices.grand_total.currency,
+              value: cart?.prices.grand_total.value
+            },
+            returnUrl: "http://localhost:5173/checkout"
+          }
+        }
+      })
+      console.log(dataSession);
+      CookieManager.createCookie(namespaces.checkout.adyenSession, JSON.stringify(dataSession), 1)
+      
+      setAdyenSession(dataSession.createAdyenSession);
+    }
+
+
   }
 
   return (
@@ -89,11 +107,11 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
             <Loader2 className={`mr-2 h-10 w-10 animate-spin`} />
           </div>
         )}
-        
-        
+
+
         {(!loadingAdyenPaymentMethods && adyenPayments) && (
           <Form {...formPay}>
-            <form onSubmit={formPay.handleSubmit(onSubmitPay)} className="my-5 space-y-6">
+            <form className="my-5 space-y-6">
               <FormField
                 control={formPay.control}
                 name="code"
@@ -110,12 +128,16 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
                               <Label
                                 htmlFor={payment.type}
                                 className="flex w-full flex-col justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
-                                <RadioGroupItem value={payment.type} id={payment.type} onClick={() => setBillingAddress(payment.type)} className="sr-only" />
+                                <RadioGroupItem value={payment.type} id={payment.type} onClick={() => {
+                                  if (selectMentod != payment.type) {
+                                    setBillingAddress(payment.type)
+                                  }
+                                }} className="sr-only" />
                                 <span>{payment.name}</span>
                                 {(selectMentod == payment.type) && (
-                                  <div className="w-full">                                    
-                                    {(selectMentod == 'scheme') && (
-                                      <AdyenPaymentMethodCreditCart />
+                                  <div className="w-full">
+                                    {(selectMentod == 'scheme' && !loadingCreateAdyenSession) && (
+                                      <AdyenPaymentMethodCreditCart adyenSession={adyenSession} />
                                     )}
 
                                     {(selectMentod == 'klarna_account') && (
@@ -135,7 +157,7 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
-                )} />              
+                )} />
             </form>
           </Form>
         )}

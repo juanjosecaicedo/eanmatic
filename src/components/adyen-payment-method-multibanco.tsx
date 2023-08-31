@@ -29,9 +29,9 @@ export default function AdyenPaymentMethodMultibanco() {
     })
 
     //Redirec with order
-    const orderId = dataPlaceOrder.setPaymentMethodAndPlaceOrder.order.order_id    
+    const orderId = dataPlaceOrder.setPaymentMethodAndPlaceOrder.order.order_id
     CookieManager.createCookie(namespaces.checkout.lastOrder, orderId, 1)
-    navigate('/checkout/success')
+    navigate('/checkout/success/')
   }
 
   return (
