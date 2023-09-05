@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Button } from "@/components/ui/button"
 import { 
   CART, 
@@ -7,7 +8,7 @@ import {
   SET_SHIPPING_ADDRESS_ON_CART, 
   SET_SHIPPING_METHODS_ON_CART 
 } from "@/graphql/checkout"
-import { AdyenPaymentMethods, AvailableShippingMethod, SetShippingAddressesOnCart } from "@/interfaces/Checkout"
+import { AvailableShippingMethod, PaymentMethod, SetShippingAddressesOnCart } from "@/interfaces/Checkout"
 import { namespaces } from "@/lib/utils"
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client"
 import { useEffect, useState } from "react"
@@ -81,9 +82,9 @@ export default function ShippingAddresses() {
   const { data: dataCountries, loading: loadingCountries } = useQuery(COUNTRIES)
   const [getCart] = useLazyQuery(CART)
   const dispatch = useDispatch()
-  const [address, setAddress] = useState<ShippingAddressCart | undefined>();
+  const [address, setAddress] = useState<ShippingAddressCart | undefined>()
   const [email, setEmail] = useState<string>()
-
+  const [regions, setRegions] = useState<AvailableRegion[] | null>(null);
 
   async function getCartData() {
     const { data: dataCart } = await getCart({
@@ -129,9 +130,17 @@ export default function ShippingAddresses() {
       save_in_address_book: values.save_in_address_book
     }
 
-    setEmail(values.email)
+    setEmail(values.email)    
+   
+    if (!regions) {
+      Object.assign(_address, {region: _address['region_id']})
+
+      // @ts-ignore
+      delete _address['region_id']
+    }
 
     setAddress(_address)
+
     const { data: dataShipping } = await setShippingAddressesOnCart({
       variables: {
         input: {
@@ -154,7 +163,7 @@ export default function ShippingAddresses() {
 
   const [setGuestEmailOnCart] = useMutation(SET_GUEST_EMAIL_ON_CART)
   const [adyenPaymentMethods, { loading: loadingAdyenPaymentMethods }] = useLazyQuery(GET_ADYEN_PAYMEN_TMETHODS)
-  const [adyenPayments, setAdyenPayments] = useState<AdyenPaymentMethods | null>(null)
+  const [adyenPayments, setAdyenPayments] = useState<PaymentMethod[] | null>(null)
   async function onSubmit(values: z.infer<typeof FormSchemaShippingMethod>) {
     const shippingMethodSelect: AvailableShippingMethod | undefined = shipping?.cart.shipping_addresses[0].available_shipping_methods.find((method) => method.carrier_code == values.type)
     const { data: cart } = await setShippingMethodsOnCart({
@@ -186,12 +195,9 @@ export default function ShippingAddresses() {
     })
     getCartData()
     setAdyenPayments(payments.adyenPaymentMethods)
-  }
+  }  
 
- 
   
-
-  const [regions, setRegions] = useState<AvailableRegion[] | null>(null);
 
   async function handleClickContry(open: boolean) {
     if (!open) {

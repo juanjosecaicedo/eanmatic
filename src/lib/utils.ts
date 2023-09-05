@@ -56,6 +56,29 @@ export function getStoreLocale(): string {
 
 export function priceFormat(price: number) {
   const currency = getStoreConfig().base_currency_code
-  
+
   return new Intl.NumberFormat(getStoreLocale(), { style: 'currency', currency }).format(price)
+}
+
+const apiKey = import.meta.env.VITE_API_KEY_ADYEN
+export const adyenCheckoutConfiguration = {
+  clientKey: apiKey,
+  analytics: {
+    enabled: false
+  },
+  session: {
+    id: '',
+    sessionData: ''
+  },
+
+  paymentMethodsConfiguration: {
+    card: {
+      hasHolderName: false,
+      holderNameRequired: false,
+      billingAddressRequired: false,
+    }
+  },
+
+  environment: 'test',
+  showPayButton: false
 }

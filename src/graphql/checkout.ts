@@ -142,45 +142,32 @@ export const SET_GUEST_EMAIL_ON_CART = gql`
 `
 
 export const GET_ADYEN_PAYMEN_TMETHODS = gql`
-  query getAdyenPaymentMethods($cartId: String!) {
-    adyenPaymentMethods(cart_id: $cartId) {
-      paymentMethodsExtraDetails {
-        type
-        icon {
-          url
-          width
-          height
-        }
-        isOpenInvoice
-        configuration {
-          amount {
-            value
-            currency
-          }
+  query AdyenPaymentMethods($cartId: String!) {
+    adyenPaymentMethods(cart_id: $cartId) {    
+      name
+      type
+      brand
+      brands
+      isOpenInvoice
+      iconUrl
+      configuration {
+        merchantId
+        merchantName
+        currency
+        amount {
+          value
           currency
-        }
+        }        
       }
-      paymentMethodsResponse {
-        paymentMethods {
+      details {
+        key
+        type
+        optional
+        items {
+          id
           name
-          type
-          brand
-          brands
-          configuration {
-            merchantId
-            merchantName
-          }
-          details {
-            key
-            type
-            items {
-              id
-              name
-            }
-            optional
-          }
-        }
-      }
+        }        
+      }          
     }
   }
 `
@@ -334,11 +321,11 @@ export const GET_ADYEN_KLARNA_DETAILS = gql`
         order_number
         cart_id
         action {
-        paymentMethodType
-        url
-        method
-        type
-        paymentData
+          paymentMethodType
+          url
+          method
+          type
+          paymentData
       }
     }
   }

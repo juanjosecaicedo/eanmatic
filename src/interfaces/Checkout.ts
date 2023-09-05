@@ -55,7 +55,7 @@ export interface Amount {
 
 export interface AdyenPaymentMethods {
   paymentMethodsExtraDetails: PaymentMethodsExtraDetail[]
-  paymentMethodsResponse: PaymentMethodsResponse
+  adyenPaymentMethods: PaymentMethodsResponse
   __typename: string
 }
 
@@ -93,7 +93,7 @@ export interface PaymentMethodsResponse {
 export interface PaymentMethod {
   name: string
   type: string
-  brand: string
+  iconUrl: string
   brands?: string[]
   configuration?: Configuration2
   details: string

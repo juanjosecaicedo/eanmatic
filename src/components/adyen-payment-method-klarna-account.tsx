@@ -8,9 +8,10 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 interface Props {
   email: string | undefined
+  type: string
 }
 
-export default function AdyenPaymentMethodklarnaAccount({ email }: Props) {
+export default function AdyenPaymentMethodklarnaAccount({ email, type }: Props) {
   const [setPaymentMethodOnCart, { loading: loadingSetPaymentMethodOnCart, error: errorSetPaymentMethodOnCart }] = useMutation(SET_PAYMENT_METHOD_ON_CART)
   const [getAdyenKlarnaDetails, { loading: loadingGetAdyenKlarnaDetails }] = useLazyQuery(GET_ADYEN_KLARNA_DETAILS)
 
@@ -31,19 +32,22 @@ export default function AdyenPaymentMethodklarnaAccount({ email }: Props) {
 
     if (setPayment.setPaymentMethodOnCart) {
       const _email = email?.length ? email : 'customer@email.pt'
-
+      console.log(type);
+      
       const { data: klarnaDetails } = await getAdyenKlarnaDetails({
         variables: {
           cartId: cartId,
           email: _email
         }
       })
+     
+
+      CookieManager.createCookie(namespaces.checkout.lastOrder, klarnaDetails.getAdyenKlarnaDetails.order_number, 1)
 
       if (klarnaDetails.getAdyenKlarnaDetails?.action.type == "redirect") {
-        window.location.href = klarnaDetails.getAdyenKlarnaDetails?.action.url
+        window.location.href = klarnaDetails.getAdyenKlarnaDetails?.action.url        
       }
     }
-
   }
 
   return (

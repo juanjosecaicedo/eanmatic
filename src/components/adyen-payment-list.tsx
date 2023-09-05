@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { AdyenPaymentMethods, PaymentMethod } from "@/interfaces/Checkout"
+import { PaymentMethod } from "@/interfaces/Checkout"
 import { CREATE_ADYEN_SESSION, SET_BILLING_ADDRESS_ON_CART, SET_GUEST_EMAIL_ON_CART } from "@/graphql/checkout"
 import CookieManager from "@/lib/CookieManager"
 import { namespaces } from "@/lib/utils"
@@ -22,6 +22,8 @@ import { useState } from "react"
 import AdyenPaymentMethodCreditCart from "@/components/adyen-payment-method-credit-cart"
 import AdyenPaymentMethodklarnaAccount from "@/components/adyen-payment-method-klarna-account"
 import AdyenPaymentMethodMultibanco from "./adyen-payment-method-multibanco"
+import AdyenPaymentMethodMbWay from "./adyen-payment-method-mbway"
+import AdyenPaymentMethodIdeal from "./AdyenPaymentMethodIdeal"
 
 const FormSchemaPay = z.object({
   code: z.string({
@@ -31,13 +33,15 @@ const FormSchemaPay = z.object({
 
 interface Props {
   loadingAdyenPaymentMethods: boolean
-  adyenPayments: AdyenPaymentMethods | null
+  adyenPayments: PaymentMethod[] | null
   address: ShippingAddressCart | undefined
   email: string | undefined
 }
 
 export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPayments, address, email }: Props) {
   const cartId = CookieManager.getCookie(namespaces.checkout.cartId)
+  console.log(adyenPayments);
+
 
   const formPay = useForm<z.infer<typeof FormSchemaPay>>({
     resolver: zodResolver(FormSchemaPay),
@@ -70,34 +74,34 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
         }
       }
     })
+    if (type == "scheme" || type == "mbway" || type == "ideal") {
+      getAdyenSession()
+    }    
+  }
 
 
-    if (type == "scheme" && !CookieManager.getCookie(namespaces.checkout.adyenSession)) {
-      let cart;
-      const data = localStorage.getItem(namespaces.checkout.cartData);
-      if (data != null) {
-        cart = JSON.parse(data)
-      }
 
-      const { data: dataSession } = await createAdyenSession({
-        variables: {
-          input: {
-            amount: {
-              currency: cart?.prices.grand_total.currency,
-              value: cart?.prices.grand_total.value
-            },
-            returnUrl: "http://localhost:5173/checkout"
-          }
-        }
-      })
-      console.log(dataSession);
-      CookieManager.createCookie(namespaces.checkout.adyenSession, JSON.stringify(dataSession), 1)
-      
-      setAdyenSession(dataSession.createAdyenSession);
+  async function getAdyenSession() {
+    let cart;
+    const data = localStorage.getItem(namespaces.checkout.cartData);
+    if (data != null) {
+      cart = JSON.parse(data)
     }
 
-
+    const { data: dataSession } = await createAdyenSession({
+      variables: {
+        input: {
+          amount: {
+            currency: cart?.prices.grand_total.currency,
+            value: cart?.prices.grand_total.value
+          },
+          returnUrl: "http://localhost:5173/checkout"
+        }
+      }
+    })
+    setAdyenSession(dataSession.createAdyenSession);
   }
+
 
   return (
     <div>
@@ -122,12 +126,13 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
                       defaultValue={field.value}
                       className="flex flex-col space-y-1">
                       <FormItem className="space-y-3">
-                        {adyenPayments?.paymentMethodsResponse.paymentMethods.map((payment: PaymentMethod) => (
+                        {adyenPayments.map((payment: PaymentMethod) => (
                           <FormItem className="flex items-center space-x-3 space-y-0 " key={payment.type}>
                             <FormControl>
                               <Label
                                 htmlFor={payment.type}
                                 className="flex w-full flex-col justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
+                                <img src={payment.iconUrl} alt="" width={25}/>
                                 <RadioGroupItem value={payment.type} id={payment.type} onClick={() => {
                                   if (selectMentod != payment.type) {
                                     setBillingAddress(payment.type)
@@ -137,15 +142,22 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
                                 {(selectMentod == payment.type) && (
                                   <div className="w-full">
                                     {(selectMentod == 'scheme' && !loadingCreateAdyenSession) && (
-                                      <AdyenPaymentMethodCreditCart adyenSession={adyenSession} />
+                                      <AdyenPaymentMethodCreditCart adyenSession={adyenSession} type={selectMentod} />
                                     )}
 
                                     {(selectMentod == 'klarna_account') && (
-                                      <AdyenPaymentMethodklarnaAccount email={email} />
+                                      <AdyenPaymentMethodklarnaAccount email={email} type={selectMentod} />
                                     )}
 
                                     {(selectMentod == "multibanco") && (
                                       <AdyenPaymentMethodMultibanco />
+                                    )}
+
+                                    {(selectMentod == 'mbway' && !loadingCreateAdyenSession) && (
+                                      <AdyenPaymentMethodMbWay adyenSession={adyenSession} type={selectMentod} />
+                                    )}
+                                    {(selectMentod == 'ideal' && !loadingCreateAdyenSession) && (
+                                      <AdyenPaymentMethodIdeal adyenSession={adyenSession} type={selectMentod} />
                                     )}
                                   </div>
                                 )}
