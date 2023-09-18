@@ -23,7 +23,7 @@ export default function CustomerAccountLogin() {
               <CardDescription>Creating an account has many benefits: faster checkout, saving more than one address, order tracking and much more</CardDescription>
             </CardHeader>    
             <CardFooter>
-            <Link to="/customer-account-create" className={buttonVariants({ variant: "default" })}>Create an account</Link>
+            <Link to="/customer/account/create" className={buttonVariants({ variant: "default" })}>Create an account</Link>
             </CardFooter>
           </Card>
         </div>

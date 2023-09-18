@@ -1,4 +1,4 @@
-import { SET_PAYMENT_METHOD_AND_PLACE_ORDER } from "@/graphql/checkout"
+import { SET_PAYMENT_METHOD_AND_PLACE_ORDER_2 } from "@/graphql/checkout"
 import CookieManager from "@/lib/CookieManager"
 import { adyenCheckoutConfiguration, namespaces } from "@/lib/utils"
 import { useMutation } from "@apollo/client"
@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import AdyenCheckout from '@adyen/adyen-web'
 import '@adyen/adyen-web/dist/adyen.css';
 import { CreateAdyenSession } from "@/interfaces/Checkout"
-import { Button } from "./ui/button"
+import { Button } from "@/components/ui/button"
 
 interface Props {
   adyenSession: CreateAdyenSession | undefined
@@ -20,7 +20,7 @@ interface Props {
 
 export default function AdyenPaymentMethodCreditCart({ adyenSession, type }: Props) {
   const paymentContainer = useRef(null);
-  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER)
+  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER_2)
   const cartId = CookieManager.getCookie(namespaces.checkout.cartId)
   const navigate = useNavigate();
   const [showPlaceOrder, setShowPlaceOrder] = useState<boolean>(false)
@@ -30,10 +30,10 @@ export default function AdyenPaymentMethodCreditCart({ adyenSession, type }: Pro
     if (!encryptedCard) {
       return;
     }
-    
+
     const { data: dataPlaceOrder } = await setPaymentMethodAndPlaceOrder({
       variables: {
-        input: {
+        input1: {
           cart_id: cartId,
           payment_method: {
             code: "adyen_cc",
@@ -42,19 +42,22 @@ export default function AdyenPaymentMethodCreditCart({ adyenSession, type }: Pro
               stateData: encryptedCard
             }
           }
+        },
+        input2: {
+          cart_id: cartId
         }
       }
     })
 
     CookieManager.deleteCookie(namespaces.checkout.adyenSession)
-    const orderId = dataPlaceOrder.setPaymentMethodAndPlaceOrder.order.order_id
+    const orderId = dataPlaceOrder.placeOrder.order.order_number
     CookieManager.createCookie(namespaces.checkout.lastOrder, orderId, 1)
     navigate('/checkout/success')
   }
 
-  const configuration = adyenCheckoutConfiguration;  
+  const configuration = adyenCheckoutConfiguration;
 
-  async function dropin(adyenSession: CreateAdyenSession) {   
+  async function dropin(adyenSession: CreateAdyenSession) {
     Object.assign(configuration, {
       session: {
         id: adyenSession?.id,

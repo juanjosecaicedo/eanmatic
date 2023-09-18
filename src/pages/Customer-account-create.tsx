@@ -23,10 +23,11 @@ import { useForm } from "react-hook-form"
 import { useMutation } from "@apollo/client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CREATE_CUSTOMER, GENERATE_CUSTOMER_TOKEN } from "@/graphql/customer"
-import { namespaces } from "@/lib/utils"
+import { namespaces, setHeaderToken } from "@/lib/utils"
 import CookieManager from "@/lib/CookieManager"
+import { useNavigate } from "react-router-dom"
 
 const messagePasswordError = 'Minimum of different classes of characters in password is %1. Classes of characters: Lower Case, Upper Case, Digits, Special Characters.';
 const minPassword = 8;
@@ -49,6 +50,12 @@ const formSchema = z.object({
 });
 
 export default function CustomerAccountCreate() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (CookieManager.getCookie(namespaces.customer.token)) {
+      navigate('/customer/account')
+    }
+  }, [navigate])
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -79,7 +86,7 @@ export default function CustomerAccountCreate() {
           }
         }
       })
-      console.log(data)
+      
       if (data.createCustomer) {
         //Get get token        
         try {
@@ -89,14 +96,15 @@ export default function CustomerAccountCreate() {
               password: values.password
             }
           })
-          console.log(data)
-          CookieManager.createCookie(namespaces.customer.token, data.token, 1)
-          window.localStorage.setItem(namespaces.customer.token, data.token)
+          const token = data.generateCustomerToken.token
+          CookieManager.createCookie(namespaces.customer.token, token, 1)
+          window.localStorage.setItem(namespaces.customer.token, token)
+          setHeaderToken(token)
+          navigate('/customer/account')
         } catch (error) {
           if (error instanceof Error) {
             setError(error.message)
-          }
-          console.error(error)
+          }          
         }
       }
 
@@ -106,8 +114,7 @@ export default function CustomerAccountCreate() {
         setTimeout(function () {
           setError(false)
         }, 8000)
-      }
-      console.error(error)
+      }      
     }
   }
 

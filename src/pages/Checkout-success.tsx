@@ -1,60 +1,46 @@
 import { ADYEN_PAYMENT_STATUS } from "@/graphql/checkout";
 import CookieManager from "@/lib/CookieManager"
 import { namespaces } from "@/lib/utils";
-import { useQuery } from "@apollo/client";
+import { useLazyQuery } from "@apollo/client";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button"
 import PaymentSusccesMultibanco from "@/components/payment-success-multibanco";
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { setCart } from "@/reducers/cart";
+import { useDispatch } from "react-redux";
 
 export default function CheckoutSuccess() {
 
-  const skip = !(CookieManager.getCookie(namespaces.checkout.paymentType) == "adyen_hpp");
-  const { data: dataAdyenPaymentStatus, loading: loadingAdyenPaymentStatus } = useQuery(ADYEN_PAYMENT_STATUS, {
-    variables: {
-      orderNumber: CookieManager.getCookie(namespaces.checkout.lastOrder), //5000000093,
-      cartId: localStorage.getItem(namespaces.checkout.cartId)  //'9sHmdEGb9ma4bD1UpvenaJRtTiRSnFB8'
-    },
-    skip: skip
-  })
+  const isAdyen = (CookieManager.getCookie(namespaces.checkout.paymentType) == "adyen_hpp")
+  const dispatch = useDispatch()
+  const [adyenPaymentStatus, { data: dataAdyenPaymentStatus, loading: loadingAdyenPaymentStatus }] = useLazyQuery(ADYEN_PAYMENT_STATUS)
+  const [actionData, setactionData] = useState<object | null>(null)
 
-
-
-  let actionData = null;
-  if (!loadingAdyenPaymentStatus && dataAdyenPaymentStatus) {
-    actionData = JSON.parse(dataAdyenPaymentStatus.adyenPaymentStatus.action);
-    if(actionData) {
-      getStatusPayment(actionData.paymentData)
-    }
-  }
-
-  async function getStatusPayment(paymentData: string) {
-    const response = await fetch('https://checkoutshopper-test.adyen.com/checkoutshopper/services/PaymentInitiation/v1/status?clientKey=test_3Z2WQBPYTRDVNDFXX2J5G6I7ZUXS6TKO', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ paymentData })
-    }).then(response => response.json())
-
-    console.log(response);
-    if ("authorised" in response && "type" in response && response.type != "complete") {
-      getStatusPayment(paymentData)
-    }    
-  }
-    
-  
-    
-
-  //Delete cart id cookie
   useEffect(() => {
-    if (dataAdyenPaymentStatus?.adyenPaymentStatus) {
-
-      CookieManager.deleteCookie(namespaces.checkout.cartId)
-      //window.localStorage.removeItem(namespaces.checkout.cartId)
+    if (isAdyen && CookieManager.getCookie(namespaces.checkout.cartId)) {
+      const getDataAdyen = async () => {
+        const { data: adyenPaymentStatusData } = await adyenPaymentStatus({
+          variables: {
+            orderNumber: CookieManager.getCookie(namespaces.checkout.lastOrder),
+            cartId: CookieManager.getCookie(namespaces.checkout.cartId)
+          }
+        })
+        if (adyenPaymentStatusData) {
+          console.log(adyenPaymentStatusData, "Entro");
+          const action = JSON.parse(adyenPaymentStatusData.adyenPaymentStatus.action);
+          setactionData(action)
+          if (action) {
+            console.log(action);
+          }
+        }
+        CookieManager.deleteCookie(namespaces.checkout.cartId)
+        dispatch(setCart(null))
+      }
+      getDataAdyen()
     }
-  })
+
+  }, [adyenPaymentStatus, isAdyen, dispatch])
 
   return (
     <div>
@@ -71,7 +57,7 @@ export default function CheckoutSuccess() {
 
         {(!loadingAdyenPaymentStatus && dataAdyenPaymentStatus) && (
           <div className="w-full">
-            {(actionData && actionData.paymentMethodType == "multibanco") && (
+            {(actionData && "paymentMethodType" in actionData && actionData.paymentMethodType == "multibanco") && (
               <div>
                 <PaymentSusccesMultibanco action={dataAdyenPaymentStatus.adyenPaymentStatus.action} />
               </div>

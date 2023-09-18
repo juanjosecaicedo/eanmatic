@@ -1,14 +1,14 @@
 import { CreateAdyenSession } from "@/interfaces/Checkout"
 import { adyenCheckoutConfiguration, namespaces } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import AdyenCheckout from '@adyen/adyen-web'
 import { useLazyQuery, useMutation } from "@apollo/client";
-import { ADYEN_PAYMENT_STATUS, SET_PAYMENT_METHOD_AND_PLACE_ORDER } from "@/graphql/checkout";
+import { ADYEN_PAYMENT_STATUS, SET_PAYMENT_METHOD_AND_PLACE_ORDER_2 } from "@/graphql/checkout";
 import CookieManager from "@/lib/CookieManager";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 interface Props {
@@ -20,7 +20,7 @@ export default function AdyenPaymentMethodIdeal({ adyenSession, type }: Props) {
   const paymentContainer = useRef(null)
   const configuration = adyenCheckoutConfiguration;
   const [showPlaceOrder, setShowPlaceOrder] = useState<boolean>(false)
-  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER)
+  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER_2)
   const [adyenPaymentStatus, { loading: loadingAdyenPaymentStatus }] = useLazyQuery(ADYEN_PAYMENT_STATUS)
   const [stateData, setStateData] = useState<string | null>(null)
   const cartId = CookieManager.getCookie(namespaces.checkout.cartId)
@@ -38,8 +38,7 @@ export default function AdyenPaymentMethodIdeal({ adyenSession, type }: Props) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onChange: function (state: any) {
-        if (state.isValid) {
-          console.log(state);
+        if (state.isValid) {          
           setStateData(JSON.stringify(state.data))
         } else {
           setStateData(null)
@@ -57,7 +56,7 @@ export default function AdyenPaymentMethodIdeal({ adyenSession, type }: Props) {
     if (!stateData) return
     const { data: dataPlaceOrder } = await setPaymentMethodAndPlaceOrder({
       variables: {
-        input: {
+        input1: {
           cart_id: cartId,
           payment_method: {
             code: "adyen_hpp",
@@ -66,12 +65,15 @@ export default function AdyenPaymentMethodIdeal({ adyenSession, type }: Props) {
               stateData: stateData
             }
           }
+        },
+        input2: {
+          cart_id: cartId
         }
       }
     })
 
     CookieManager.deleteCookie(namespaces.checkout.adyenSession)
-    const orderId = dataPlaceOrder.setPaymentMethodAndPlaceOrder.order.order_id
+    const orderId = dataPlaceOrder.placeOrder.order.order_number
     CookieManager.createCookie(namespaces.checkout.lastOrder, orderId, 1)
     const { data: dataAdyenPaymentStatus } = await adyenPaymentStatus({
       variables: {

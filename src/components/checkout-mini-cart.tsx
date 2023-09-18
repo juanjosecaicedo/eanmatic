@@ -16,19 +16,18 @@ import { Cart } from "@/interfaces/Cart"
 import { Link } from "react-router-dom"
 import { priceFormat } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import ItemsCart from "./items-cart"
-
+import ItemsCart from "@/components/items-cart"
 
 export default function MiniCart() {
-  const cart: Cart | null | object = useSelector((state: RootState) => state.cart.value)
-
+  const cart: Cart | null | object = useSelector((state: RootState) => state.cart.value)  
+  
   return (
     <>
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" className="border-0">
             <ShoppingCart className="h-4 w-4" />
-            {(cart && 'items' in cart) && (
+            {(cart && "items" in cart) && (
               <Badge className="ml-2">{cart.items.length}</Badge>
             )}
           </Button>

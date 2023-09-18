@@ -1,21 +1,21 @@
 import CookieManager from "@/lib/CookieManager";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import { namespaces } from "@/lib/utils";
 import { useMutation } from "@apollo/client";
-import { SET_PAYMENT_METHOD_AND_PLACE_ORDER } from "@/graphql/checkout";
+import { SET_PAYMENT_METHOD_AND_PLACE_ORDER_2 } from "@/graphql/checkout";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 export default function AdyenPaymentMethodMultibanco() {
-  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER)
+  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER_2)
   const navigate = useNavigate();
   const cartId = CookieManager.getCookie(namespaces.checkout.cartId)
 
   async function placeOrder() {
     const { data: dataPlaceOrder } = await setPaymentMethodAndPlaceOrder({
       variables: {
-        input: {
+        input1: {
           cart_id: cartId,
           payment_method: {
             code: "adyen_hpp",
@@ -24,12 +24,17 @@ export default function AdyenPaymentMethodMultibanco() {
               stateData: "{\"paymentMethod\":{\"type\":\"multibanco\"},\"clientStateDataIndicator\":true}"
             }
           }
+        },
+        input2: {
+          cart_id: cartId
         }
       }
     })
+    console.log(dataPlaceOrder);
+    
 
     //Redirec with order
-    const orderId = dataPlaceOrder.setPaymentMethodAndPlaceOrder.order.order_id
+    const orderId = dataPlaceOrder.placeOrder.order.order_number
     CookieManager.createCookie(namespaces.checkout.lastOrder, orderId, 1)
     navigate('/checkout/success/')
   }

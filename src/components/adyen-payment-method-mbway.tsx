@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import AdyenCheckout from '@adyen/adyen-web'
 import '@adyen/adyen-web/dist/adyen.css';
 import { adyenCheckoutConfiguration, namespaces } from "@/lib/utils";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import { useLazyQuery, useMutation } from "@apollo/client";
-import { ADYEN_PAYMENT_STATUS, SET_PAYMENT_METHOD_AND_PLACE_ORDER } from "@/graphql/checkout";
+import { ADYEN_PAYMENT_STATUS, SET_PAYMENT_METHOD_AND_PLACE_ORDER_2, SET_PAYMENT_METHOD_ON_CART } from "@/graphql/checkout";
 import CookieManager from "@/lib/CookieManager";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
@@ -23,14 +23,15 @@ export default function AdyenPaymentMethodMbWay({ adyenSession, type }: Props) {
   const [showPlaceOrder, setShowPlaceOrder] = useState<boolean>(false)
   const [telephoneNumber, setTelephoneNumber] = useState<string>();
   const cartId = CookieManager.getCookie(namespaces.checkout.cartId)
-  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER)
+  const [setPaymentMethodAndPlaceOrder, { loading: loadingPlaceOrder, error: errorPlaceOrder }] = useMutation(SET_PAYMENT_METHOD_AND_PLACE_ORDER_2)
   const [adyenPaymentStatus, { loading: loadingAdyenPaymentStatus }] = useLazyQuery(ADYEN_PAYMENT_STATUS)
   const [showMbwayLoader, setShowMbwayLoader] = useState(false)
   const navigate = useNavigate();
 
+  const [setPaymentMethodOnCart] = useMutation(SET_PAYMENT_METHOD_ON_CART)
+  const [payload, setPayload] = useState('')
 
   async function placeOrder() {
-
     const stateData = {
       clientStateDataIndicator: true,
       paymentMethod: {
@@ -39,8 +40,7 @@ export default function AdyenPaymentMethodMbWay({ adyenSession, type }: Props) {
       }
     }
 
-
-    const { data: dataPlaceOrder } = await setPaymentMethodAndPlaceOrder({
+    setPaymentMethodOnCart({
       variables: {
         input: {
           cart_id: cartId,
@@ -55,8 +55,39 @@ export default function AdyenPaymentMethodMbWay({ adyenSession, type }: Props) {
       }
     })
 
+    const { data: dataPlaceOrder } = await setPaymentMethodAndPlaceOrder({
+      variables: {
+        input1: {
+          cart_id: cartId,
+          payment_method: {
+            code: "adyen_hpp",
+            adyen_additional_data_hpp: {
+              brand_code: "mbway",
+              stateData: JSON.stringify(stateData)
+            }
+          }
+        },
+        input2: {
+          cart_id: cartId
+        }
+      }
+    })
+    console.log(payload);
+    
+    /*Object.assign(payload, {
+      orderId :dataPlaceOrder.placeOrder.order.order_number
+    })
+    const {data: details} = await getAdyenPaymentDetails({
+      variables: {
+        payload: JSON.stringify(payload),
+        cartId: cartId
+      }
+    })
+
+    console.log(details);*/
+
     CookieManager.deleteCookie(namespaces.checkout.adyenSession)
-    const orderId = dataPlaceOrder.setPaymentMethodAndPlaceOrder.order.order_id
+    const orderId = dataPlaceOrder.placeOrder.order.order_number
     CookieManager.createCookie(namespaces.checkout.lastOrder, orderId, 1)
     const { data: dataAdyenPaymentStatus } = await adyenPaymentStatus({
       variables: {
@@ -65,7 +96,6 @@ export default function AdyenPaymentMethodMbWay({ adyenSession, type }: Props) {
       }
     })
     const actionData = JSON.parse(dataAdyenPaymentStatus.adyenPaymentStatus.action);
-    console.log(actionData);
     getStatusPayment(actionData.paymentData)
   }
 
@@ -79,11 +109,11 @@ export default function AdyenPaymentMethodMbWay({ adyenSession, type }: Props) {
       body: JSON.stringify({ paymentData })
     }).then(response => response.json())
 
-    console.log(response);
+
     if ("authorised" in response && "type" in response && response.type != "complete") {
       getStatusPayment(paymentData)
     } else if ("errorCode" in response) {
-      console.log(response)
+
       setShowMbwayLoader(false)
     } else {
       navigate('/checkout/success')
@@ -106,6 +136,7 @@ export default function AdyenPaymentMethodMbWay({ adyenSession, type }: Props) {
       onChange: function (state: any) {
         if (state.isValid) {
           setTelephoneNumber(state.data.paymentMethod.telephoneNumber)
+          setPayload(state.data)
         }
         setShowPlaceOrder(state.isValid)
       }

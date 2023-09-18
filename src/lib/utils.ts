@@ -1,10 +1,11 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import CookieManager from "@/lib/CookieManager"
+import { httpLink } from "@/lib/ApolloConfig"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
-
 
 export const namespaces = {
   checkout: {
@@ -81,4 +82,34 @@ export const adyenCheckoutConfiguration = {
 
   environment: 'test',
   showPayButton: false
+}
+
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function redirectCustomerToLogin(navigate: any) {
+  CookieManager.deleteCookie(namespaces.customer.token)
+  navigate('/customer/account/login')
+}
+
+export function setHeaderToken(token: string | null = null) {
+  const headers = httpLink.options.headers
+  if (!token && CookieManager.getCookie(namespaces.customer.token)) {
+    token = CookieManager.getCookie(namespaces.customer.token)
+  }
+
+  if (token && headers) {
+    Object.assign(headers, {
+      "authorization": token ? `Bearer ${token}` : ""
+    })
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function isLogged(callback: any, token: string) {
+  setHeaderToken(token)
+  const { data: customer } = await callback()
+  if (customer) {
+    return true
+  }
+  return false
 }

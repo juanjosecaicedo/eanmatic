@@ -74,11 +74,7 @@ const ProductVariations = ({ configurableOptions, variants, showLabels, field }:
       }
     }
 
-    if (matchingSkus.length) {
-      // const data = variants.find((variant: Variant) => variant.product.sku === matchingSkus[0])
-      // console.log(data);
-
-      //setSku(matchingSkus[0]);
+    if (matchingSkus.length) {    
 
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
       if (inputElement.current) {

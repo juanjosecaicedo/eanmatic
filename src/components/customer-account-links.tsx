@@ -5,11 +5,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import CookieManager from "@/lib/CookieManager"
+import { namespaces, redirectCustomerToLogin } from "@/lib/utils"
+import { setCart } from "@/reducers/cart"
 import { User } from "lucide-react"
-import { Link } from "react-router-dom"
+import { useDispatch } from "react-redux"
+import { Link, useNavigate } from "react-router-dom"
 
 export default function CustomerAccountLinks() {
-  //Poner parametro en magento Klarna
+  //Poner parametro en magento Klarna  
+  const token = CookieManager.getCookie(namespaces.customer.token)
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const logout = () => {
+    if (CookieManager.getCookie(namespaces.checkout.cartId)) {
+      CookieManager.deleteCookie(namespaces.checkout.cartId)
+      dispatch(setCart(null))
+    }
+    redirectCustomerToLogin(navigate)
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -19,15 +33,27 @@ export default function CustomerAccountLinks() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem>
-          <p className="text-center">My Account / Register</p>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Link to="/customer-account-login" className={buttonVariants({ variant: "default" }) + " w-full"}>Log in</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Link to="/customer-account-create" className={buttonVariants({ variant: "secondary" }) + " w-full"}>Register</Link>
-        </DropdownMenuItem>
+        {!token && (
+          <>
+            <DropdownMenuItem>
+              <Link to="/customer/account/login" className={buttonVariants({ variant: "link" }) + " w-full"}>Login</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link to="/customer/account/create" className={buttonVariants({ variant: "link" }) + " w-full"}>Register</Link>
+            </DropdownMenuItem>
+          </>
+        )}
+        {token && (
+          <>
+            <DropdownMenuItem>
+              <Link to="/customer/account" className={buttonVariants({ variant: "link" }) + " w-full"}>Account</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Button variant="link" className="w-full" onClick={logout}>Log out</Button>
+            </DropdownMenuItem>
+          </>
+        )}
+
       </DropdownMenuContent>
     </DropdownMenu>
   )

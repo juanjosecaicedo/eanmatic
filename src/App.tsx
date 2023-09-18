@@ -14,32 +14,40 @@ import { HeaderNavigationMenu } from '@/components/header'
 import Home from '@/pages/Home'
 import ProductView from "@/pages/Product-view"
 import { useEffect } from "react"
-import { useQuery } from "@apollo/client"
+import { useLazyQuery } from "@apollo/client"
 import { CART } from "./graphql/checkout"
-import { namespaces } from "@/lib/utils"
+import { namespaces, setHeaderToken } from "@/lib/utils"
 import { useDispatch } from "react-redux"
 import { setCart } from "@/reducers/cart"
-import Test from "@/pages/test"
 import CheckoutCart from "@/pages/Checkout-cart"
 import CheckoutSuccess from "@/pages/Checkout-success"
 import CookieManager from "@/lib/CookieManager"
 import CheckoutFailed from "@/pages/Checkout-failed"
+import CustomerAddress from "@/pages/Customer-address"
+import CustomerAddressNew from "@/pages/Customer-address-new"
 
 function App() {
   const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
-  const dispatch = useDispatch()
-  const { data, loading, error } = useQuery(CART, {
-    skip: !cartId ? true : false,
-    variables: {
-      cartId: cartId
-    }
-  }) 
-
+  const dispatch = useDispatch()  
+  const [getCart] = useLazyQuery(CART)
   useEffect(() => {
-    if (!loading && !error && data) {
-      dispatch(setCart(data))      
+    if (CookieManager.getCookie(namespaces.customer.token)) {
+      setHeaderToken()
     }
-  }, [loading, error, data, dispatch])
+    const fetchData = async () => {
+      const {data: cartData} = await getCart({
+        variables: {
+          cartId: cartId
+        }
+      })
+      if(cartData) {
+        dispatch(setCart(cartData.cart))
+      }      
+    }
+
+    fetchData()
+    
+  }, [getCart, cartId, dispatch])
 
   return (
     <Router>
@@ -47,16 +55,17 @@ function App() {
         <HeaderNavigationMenu />
         <div className='container mx-auto'>
           <Routes>
-            <Route path="/" Component={Home} />
-            <Route path="/test" Component={Test} />
+            <Route path="/" Component={Home} />            
             <Route path="/checkout" Component={Checkout} />
             <Route path="/checkout/success" Component={CheckoutSuccess} />
             <Route path="/checkout/failed" Component={CheckoutFailed} />
             <Route path="/checkout/cart" Component={CheckoutCart} />
-            <Route path="/customer-account-login" Component={CustomerAccountLogin} />
-            <Route path="/customer-account-create" Component={CustomerAccountCreate} />
-            <Route path="/customer-account" Component={CustomerAccount} />
+            <Route path="/customer/account/login" Component={CustomerAccountLogin} />
+            <Route path="/customer/account/create" Component={CustomerAccountCreate} />
+            <Route path="/customer/account" Component={CustomerAccount} />
             <Route path="/product/id/:id/sku/:sku/url/:url" Component={ProductView} />
+            <Route path="/customer/address" Component={CustomerAddress} />
+            <Route path="/customer/address/new" Component={CustomerAddressNew} />
           </Routes>
         </div>
       </ThemeProvider>

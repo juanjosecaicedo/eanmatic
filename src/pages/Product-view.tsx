@@ -25,11 +25,12 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert"
-import { namespaces, priceFormat } from "@/lib/utils";
-import { useState } from "react";
+import { isLogged, namespaces, priceFormat } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { setCart } from "@/reducers/cart";
 import CookieManager from "@/lib/CookieManager";
+import { CUSTOMER_CART, GET_CUSTOMER } from "@/graphql/customer";
 
 const formSchema = z.object({
   parentSku: z.string().min(1),
@@ -81,6 +82,27 @@ function AlertDestructive({ message, variant }: AlertDestructive) {
 
 export default function ProductView() {
   const { id, sku, url, } = useParams()
+  const token = CookieManager.getCookie(namespaces.customer.token)
+  const [getCustomer] = useLazyQuery(GET_CUSTOMER)
+  const [customerIsLogged, setCustomerIsLogged] = useState<boolean>(false)
+  const [customerCart] = useLazyQuery(CUSTOMER_CART)
+
+
+  useEffect(() => {
+    if (token) {
+      const customer = async () => {
+        const d = await isLogged(getCustomer, token)
+        setCustomerIsLogged(d)
+
+        if (d) {
+          console.log(d);
+        }
+      }
+      customer()
+    }
+  }, [token, getCustomer, customerCart])
+
+
   const { data, loading, error } = useQuery(GET_PRODUCT_DETAILS, {
     variables: {
       filter: {
@@ -121,14 +143,17 @@ export default function ProductView() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
+
+    let cart = null
+    /*if (httpLink.options.headers && "authorization" in httpLink.options.headers) {
+      httpLink.options.headers['authorization'] = ''
+    }*/
     if (!cartId) {
-      const cart = await getEmptyCart();
+
+      cart = await getEmptyCart();
       CookieManager.createCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
       window.localStorage.setItem(namespaces.checkout.cartId, cart.data.createEmptyCart)
-    }
-
-    if (cartId) {
-      //add to cart 
+    } else {
       const { data: addToCart } = await addConfigurableProductsToCart({
         variables: {
           input: {
@@ -150,6 +175,30 @@ export default function ProductView() {
         setTimeout(() => setShowAlert(false), 5000)
       }
     }
+
+    if (cart && "data" in cart) {
+      //add to cart 
+      const { data: addToCart } = await addConfigurableProductsToCart({
+        variables: {
+          input: {
+            cart_id: cart.data.createEmptyCart,
+            cart_items: [{
+              parent_sku: values.parentSku,
+              data: {
+                quantity: values.quantity,
+                sku: values.sku
+              }
+            }]
+          }
+        }
+      })
+
+      if (addToCart.addConfigurableProductsToCart.cart && cart.data.createEmptyCart) {
+        setShowAlert(true)
+        getCartData(cart.data.createEmptyCart)
+        setTimeout(() => setShowAlert(false), 5000)
+      }
+    }
   }
 
   const [qty, setQty] = useState<number | string>(1)
@@ -157,10 +206,40 @@ export default function ProductView() {
   const [addSimpleProductsToCart, { loading: loadingCartSimple, error: errorToCartSimple }] = useMutation(ADD_SIMPLE_PRODUCTS_TO_CART)
   async function handleSimpleToCart() {
     const cartId = CookieManager.getCookie(namespaces.checkout.cartId);
-    if (!cartId) {
-      const cart = await getEmptyCart();
+
+    if (customerIsLogged) {
+      console.log(customerIsLogged);
+    }
+
+    let cart = null
+    /*if (httpLink.options.headers && "authorization" in httpLink.options.headers) {
+      httpLink.options.headers['authorization'] = ''
+    }*/
+
+    if (!cartId) {     
+      cart = await getEmptyCart();
       CookieManager.createCookie(namespaces.checkout.cartId, cart.data.createEmptyCart, 1);
       window.localStorage.setItem(namespaces.checkout.cartId, cart.data.createEmptyCart)
+    }
+    if (cart && "data" in cart) {
+
+      const { data: addToCart } = await addSimpleProductsToCart({
+        variables: {
+          input: {
+            cart_id: cart.data.createEmptyCart,
+            cart_items: [{
+              data: {
+                quantity: qty,
+                sku: sku
+              }
+            }]
+          }
+        }
+      })
+      if (addToCart.addSimpleProductsToCart && cart.data.createEmptyCart) {
+        setShowAlert(true);
+        getCartData(cart.data.createEmptyCart)
+      }
     }
     if (cartId) {
       const { data: addToCart } = await addSimpleProductsToCart({
@@ -177,7 +256,7 @@ export default function ProductView() {
         }
       })
       if (addToCart.addSimpleProductsToCart) {
-        setShowAlert(true);
+        setShowAlert(true)
         getCartData(cartId)
       }
     }
@@ -216,6 +295,7 @@ export default function ProductView() {
             <h4 className="scroll-m-20 text-xl font-semibold tracking-tight">
               <span>{priceFormat(product.price_range.maximum_price.final_price.value)}</span>
             </h4>
+            {CookieManager.getCookie(namespaces.checkout.cartId)}
 
             {errorCart && (<AlertDestructive variant={Variant.destructive} message={errorCart.message} />)}
             {errorToCartConfigurable && (<AlertDestructive variant={Variant.destructive} message={errorToCartConfigurable.message} />)}

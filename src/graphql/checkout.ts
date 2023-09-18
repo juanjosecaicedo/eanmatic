@@ -22,7 +22,7 @@ export const ADD_CONFIGURABLE_PRODUCTS_TO_CART = gql`
       cart {
         items {
           id
-          quantity
+          quantity          
           product {
             name,
             sku
@@ -216,6 +216,7 @@ export const CART = gql`
       email
       items {
         id
+        uid
         prices {
           total_item_discount {
             value
@@ -373,6 +374,215 @@ export const CREATE_ADYEN_SESSION = gql`
       returnUrl
       expiresAt
       countryCode
+    }
+  }
+`
+
+export const SET_PAYMENT_METHOD_AND_PLACE_ORDER_2 = gql`
+  mutation SetPaymentMethodAndPlaceOrder($input1: SetPaymentMethodOnCartInput!, $input2: PlaceOrderInput!) {
+    setPaymentMethodOnCart(input: $input1) {
+      cart {
+        selected_payment_method {
+          code
+          title
+        }
+      }
+    }
+    placeOrder(input: $input2) {
+      order {
+        order_number
+        cart_id
+      }
+    }
+  }
+`
+
+export const ADYEN_PAYMENT_DETAILS = gql`
+  mutation getAdyenPaymentDetails($payload: String!, $cartId: String!) {
+    adyenPaymentDetails(payload: $payload, cart_id: $cartId) {
+      isFinal
+      resultCode
+      additionalData
+      action
+    }
+  }
+`
+
+export const REMOVE_ITEM_FROM_CART = gql`
+  mutation RemoveItemFromCart($input: RemoveItemFromCartInput!) {
+    removeItemFromCart(input: $input) {
+      cart {
+        email
+        items {
+          id
+          uid
+          prices {
+            total_item_discount {
+              value
+              currency
+            }
+            price {
+              value
+              currency
+            }
+            discounts {
+              label
+              amount {
+                value
+                currency
+              }
+            }
+          }
+          product {
+            name
+            sku
+            id
+            image {
+              url
+              label
+            }
+            price_range {
+              maximum_price {
+                regular_price {
+                  value
+                  currency
+                }
+                final_price {
+                  value
+                  currency
+                }
+                discount {
+                  amount_off
+                  percent_off
+                }
+              }
+            }
+          }
+          quantity
+        }
+        applied_coupons {
+          code
+        }
+
+        selected_payment_method {
+          code
+          title
+        }
+
+        prices {
+          discounts {
+            amount {
+              value
+            }
+            label
+          }
+          subtotal_excluding_tax {
+            value
+            currency
+          }
+          grand_total {
+            value
+            currency
+          }
+          applied_taxes {
+            label
+            amount {
+              value
+              currency
+            }
+          }
+        }
+      }
+    }
+  }
+
+`
+
+export const UPDATE_cART_ITEMS = gql`
+  mutation UpdateCartItems($input: UpdateCartItemsInput!){
+    updateCartItems(input: $input) {
+      cart {
+        email
+        items {
+          id
+          uid
+          prices {
+            total_item_discount {
+              value
+              currency
+            }
+            price {
+              value
+              currency
+            }
+            discounts {
+              label
+              amount {
+                value
+                currency
+              }
+            }
+          }
+          product {
+            name
+            sku
+            id
+            image {
+              url
+              label
+            }
+            price_range {
+              maximum_price {
+                regular_price {
+                  value
+                  currency
+                }
+                final_price {
+                  value
+                  currency
+                }
+                discount {
+                  amount_off
+                  percent_off
+                }
+              }
+            }
+          }
+          quantity
+        }
+        applied_coupons {
+          code
+        }
+
+        selected_payment_method {
+          code
+          title
+        }
+
+        prices {
+          discounts {
+            amount {
+              value
+            }
+            label
+          }
+          subtotal_excluding_tax {
+            value
+            currency
+          }
+          grand_total {
+            value
+            currency
+          }
+          applied_taxes {
+            label
+            amount {
+              value
+              currency
+            }
+          }
+        }
+      }
     }
   }
 `

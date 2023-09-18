@@ -13,7 +13,7 @@ export const cardSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    setCart: (state, action: PayloadAction<object>) => {
+    setCart: (state, action: PayloadAction<object|null>) => {
       state.value = action.payload
     }
   }

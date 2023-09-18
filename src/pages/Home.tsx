@@ -5,7 +5,6 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card"
-import { buttonVariants } from "@/components/ui/button"
 import { Product } from "@/interfaces/Product"
 import { Link } from "react-router-dom"
 import ProductVariations from "@/components/product-variations"
@@ -49,7 +48,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  <Link to={'/product/id/' + product.id + '/sku/' + product.sku + '/url/' + product.url_key} className={buttonVariants({ variant: "link" }) + ' px-0'}> {product.name} </Link>
+                  <Link to={'/product/id/' + product.id + '/sku/' + product.sku + '/url/' + product.url_key} className="hover:underline"> {product.name} </Link>
                 </CardDescription>
                 <span className="text-sm">SKU: <strong>{product.sku}</strong></span>
                 <div className="flex">
