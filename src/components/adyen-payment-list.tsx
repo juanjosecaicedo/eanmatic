@@ -97,7 +97,7 @@ export default function AdyenPaymentsList({ loadingAdyenPaymentMethods, adyenPay
             currency: cart?.prices.grand_total.currency,
             value: cart?.prices.grand_total.value
           },
-          returnUrl: import.meta.env.VITE_URL_PROJECT
+          returnUrl: import.meta.env.VITE_APP_URL_PROJECT
         }
       }
     })

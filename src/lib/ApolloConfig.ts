@@ -6,7 +6,7 @@ if (!CookieManager.getCookie("STORE_CODE")) {
 }
 
 export const httpLink = new HttpLink({
-  uri: import.meta.env.VITE_URL_ENDPOINT,
+  uri: import.meta.env.VITE_APP_URL_ENDPOINT,
   headers: {
     store: CookieManager.getCookie("STORE_CODE") ?? 'default'
   }

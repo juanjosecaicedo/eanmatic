@@ -61,7 +61,7 @@ export function priceFormat(price: number) {
   return new Intl.NumberFormat(getStoreLocale(), { style: 'currency', currency }).format(price)
 }
 
-const apiKey = import.meta.env.VITE_API_KEY_ADYEN
+const apiKey = import.meta.env.VITE_APP_API_KEY_ADYEN
 export const adyenCheckoutConfiguration = {
   clientKey: apiKey,
   analytics: {
